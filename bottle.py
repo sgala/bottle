@@ -473,7 +473,7 @@ class Request(threading.local, DictMixin):
         and refilled on every request. All attributs are thread-local, so it
         is save to use the global instance in multithread environments.
 
-        The Resquest object wrapps a WSGI environment and can be used as such.
+        The Request object wrapps a WSGI environment and can be used as such.
     """
     def __init__(self, environ=None, app=None):
         """ Create a new Request instance.
