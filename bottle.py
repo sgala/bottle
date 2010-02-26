@@ -864,7 +864,7 @@ def static_file(filename, root, guessmime=True, mimetype=None, download=False):
     if download == True:
         download = os.path.basename(filename)
     if download:
-        header['Content-Disposition'] = 'attachment; filename=%s' % download
+        header['Content-Disposition'] = 'attachment; filename="%s"' % download
 
     stats = os.stat(filename)
     lm = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(stats.st_mtime))
@@ -1107,7 +1107,7 @@ class TwistedServer(ServerAdapter):
         resource = twisted.web.wsgi.WSGIResource(twisted.internet.reactor,
                    twisted.internet.reactor.getThreadPool(), handler)
         site = server.Site(resource)
-        twisted.internet.reactor.listenTCP(self.port, se.fhost)
+        twisted.internet.reactor.listenTCP(self.port, self.host)
         twisted.internet.reactor.run()
 
 
@@ -1128,17 +1128,17 @@ class GunicornServer(ServerAdapter):
 
 class AutoServer(ServerAdapter):
     """ Untested. """
-    adapters = [FapwsServer, TornadoServer, CherryPyServer, PasteServer,
+    adapters = [FapwsServer, CherryPyServer, PasteServer,
                 TwistedServer, GunicornServer, WSGIRefServer]
     def run(self, handler):
-        for sa in adapters:
+        for sa in self.adapters:
             try:
                 return sa(self.host, self.port, **self.options).run()
             except ImportError:
                 pass
 
 
-def run(app=None, server=WSGIRefServer, host='127.0.0.1', port=8080,
+def run(app=None, server=AutoServer, host='127.0.0.1', port=8080,
         interval=1, reloader=False, **kargs):
     """ Runs bottle as a web server. """
     app = app if app else default_app()
