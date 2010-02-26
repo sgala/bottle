@@ -306,7 +306,7 @@ The code looks like this:
             c.execute(query)
             conn.commit()
             
-            return '<p>The item number %d was successfully updated</p>' %no
+            return '<p>The item number %s was successfully updated</p>' %no
             
         else:
             conn = sqlite3.connect('todo.db')
