@@ -424,7 +424,7 @@ class Bottle(object):
             request.environ['wsgi.errors'].write(err)
             return HTTPError(500, err, e)
 
-    def _cast(self, out):
+    def _cast(self, out, start_response):
         """ Try to cast the input into something WSGI compatible. Correct
         HTTP header and status codes when possible. Clear output on HEAD
         requests.
@@ -447,20 +447,42 @@ class Bottle(object):
         elif isinstance(out, list) and isinstance(out[0], unicode):
             out = map(lambda x: x.encode(response.charset), out)
         elif hasattr(out, 'read'):
-            out = request.environ.get('wsgi.file_wrapper',
-                  lambda x: iter(lambda: x.read(8192), ''))(out)
+            if 'wsgi.file_wrapper' in request.environ:
+                return request.environ['wsgi.file_wrapper'](out)
+            def bottle_file_wrapper(filelike):
+                buf = filelike.read(8192) # before, call might change status/headers
+                status = '%d %s' % (response.status, HTTP_CODES[response.status])
+                start_response(status, response.wsgiheader())
+                while buf:
+                    yield buf
+                    buf = filelike.read(8192)
+            return bottle_file_wrapper(out)
         elif self.jsondump and isinstance(out, dict)\
           or self.jsondump and isinstance(out, list) and isinstance(out[0], dict):
                 out = [self.jsondump(out)]
                 response.content_type = 'application/json'
-        if isinstance(out, list) and len(out) == 1:
-            response.header['Content-Length'] = str(len(out[0]))
         if response.status in (100, 101, 204, 304) or request.method == 'HEAD':
             out = [] # rfc2616 section 4.3
+        if isinstance(out, list):
+            response.header['Content-Length'] = str(sum(map(len,out)))
+            status = '%d %s' % (response.status, HTTP_CODES[response.status])
+            start_response(status, response.wsgiheader())
+            return out
         if not hasattr(out, '__iter__'):
             raise TypeError('Request handler for route "%s" returned [%s] '
                 'which is not iterable.' % (request.path, type(out).__name__))
-        return out
+        def bottle_iter():
+            iterator = iter(out)
+            try:
+                first = iterator.next() # before, call might change status/headers
+            except StopIteration: # we still send headers
+                status = '%d %s' % (response.status, HTTP_CODES[response.status])
+                start_response(status, response.wsgiheader())
+                raise
+            yield first
+            while True:
+                yield iterator.next()
+        return bottle_iter()
 
     def __call__(self, environ, start_response):
         """ The bottle WSGI-interface. """
@@ -468,9 +490,7 @@ class Bottle(object):
             request.bind(environ, self)
             response.bind(self)
             out = self.handle(request.path, request.method)
-            out = self._cast(out)
-            status = '%d %s' % (response.status, HTTP_CODES[response.status])
-            start_response(status, response.wsgiheader())
+            out = self._cast(out, start_response)
             return out
         except (KeyboardInterrupt, SystemExit, MemoryError):
             raise
