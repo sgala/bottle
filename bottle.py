@@ -439,6 +439,8 @@ class Bottle(object):
                 out = out.output
         if not out:
             response.header['Content-Length'] = '0'
+            status = '%d %s' % (response.status, HTTP_CODES[response.status])
+            start_response(status, response.wsgiheader())
             return []
         if isinstance(out, types.StringType):
             out = [out]
