@@ -473,8 +473,8 @@ class Bottle(object):
         if not hasattr(out, '__iter__'):
             raise TypeError('Request handler for route "%s" returned [%s] '
                 'which is not iterable.' % (request.path, type(out).__name__))
-        def bottle_iter():
-            iterator = iter(out)
+        def bottle_iter(iterable):
+            iterator = iter(iterable)
             try:
                 first = iterator.next() # before, call might change status/headers
             except StopIteration: # we still send headers
@@ -485,7 +485,7 @@ class Bottle(object):
             yield first
             while True:
                 yield iterator.next()
-        return bottle_iter()
+        return bottle_iter(out)
 
     def __call__(self, environ, start_response):
         """ The bottle WSGI-interface. """
