@@ -476,9 +476,10 @@ class Bottle(object):
             try:
                 first = iterator.next() # before, call might change status/headers
             except StopIteration: # we still send headers
+                raise
+            finally:
                 status = '%d %s' % (response.status, HTTP_CODES[response.status])
                 start_response(status, response.wsgiheader())
-                raise
             yield first
             while True:
                 yield iterator.next()
