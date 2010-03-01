@@ -450,6 +450,8 @@ class Bottle(object):
             out = map(lambda x: x.encode(response.charset), out)
         elif hasattr(out, 'read'):
             if 'wsgi.file_wrapper' in request.environ:
+                status = '%d %s' % (response.status, HTTP_CODES[response.status])
+                start_response(status, response.wsgiheader())
                 return request.environ['wsgi.file_wrapper'](out)
             def bottle_file_wrapper(filelike):
                 buf = filelike.read(8192) # before, call might change status/headers
