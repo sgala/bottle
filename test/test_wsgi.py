@@ -103,10 +103,8 @@ class TestWsgi(ServerTestBase):
         """ WSGI: redirect (HTTP 303) """
         @bottle.route('/')
         def test(): bottle.redirect('/yes')
-        @bottle.route('/yes')
-        def test2(): return 'yes'
-        self.assertStatus(200,'/')
-        self.assertBody('yes', '/')
+        self.assertStatus(303, '/')
+        self.assertHeader('Location', 'http://127.0.0.1/yes', '/')
 
     def test_casting(self):
         """ WSGI: Output Casting (strings an lists) """
@@ -153,6 +151,20 @@ class TestWsgi(ServerTestBase):
         self.assertBody(self.app.jsondump({'a': 1}), '/json')
         self.assertHeader('Content-Type','application/json', '/json')
 
+    def test_generator_callback(self):
+        @bottle.route('/yield')
+        def test():
+            bottle.response.header['Test-Header'] = 'test'
+            yield 'foo'
+        @bottle.route('/yield_nothing')
+        def test2():
+            yield
+            bottle.response.header['Test-Header'] = 'test'
+        self.assertBody('foo', '/yield')
+        self.assertHeader('Test-Header', 'test', '/yield')
+        self.assertBody('', '/yield_nothing')
+        self.assertHeader('Test-Header', 'test', '/yield_nothing')
+
     def test_cookie(self):
         """ WSGI: Cookies """
         @bottle.route('/cookie')
@@ -162,9 +174,9 @@ class TestWsgi(ServerTestBase):
             bottle.response.set_cookie('c', 'c', path='/')
             return 'hello'
         try:
-            c = self.urlopen('/cookie').info().get_all('Set-Cookie', '')
+            c = self.urlopen('/cookie')['header'].get_all('Set-Cookie', '')
         except:
-            c = self.urlopen('/cookie').info().getheader('Set-Cookie', '').split(',')
+            c = self.urlopen('/cookie')['header'].get('Set-Cookie', '').split(',')
             c = [x.strip() for x in c]
         self.assertTrue('a=a' in c)
         self.assertTrue('b=b' in c)
