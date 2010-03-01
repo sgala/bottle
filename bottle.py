@@ -460,6 +460,7 @@ class Bottle(object):
                 while buf:
                     yield buf
                     buf = filelike.read(8192)
+                if hasattr(filelike, 'close'): filelike.close()
             return bottle_file_wrapper(out)
         elif self.jsondump and isinstance(out, dict)\
           or self.jsondump and isinstance(out, list) and isinstance(out[0], dict):
