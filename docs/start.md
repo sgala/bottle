@@ -111,15 +111,15 @@ As easy as using a `dict()`
     
     @route('/hello/cookie')
     def cookie():
-        name = request.COOKIES.get('name', 'Stranger')
-        response.header['Content-Type'] = 'text/plain'
+        name = request.COOKIES.get('name', 'Stranger') # retrieve cookie
+        response.header['Content-Type'] = 'text/plain' # set header
         return 'Hello, %s' % name
 
     @route('/hello/cookie', method='POST')
     def set_cookie():
-        if 'name' in request.POST:
+        if 'name' in request.POST: # variable in POST body
             name = request.POST['name']
-            response.COOKIES['name'] = name
+            response.COOKIES['name'] = name # set cookie with value
         return 'OK'
 
 
