@@ -46,16 +46,16 @@ Eso es todo. Ejecute el código y visite [http://localhost:8080/](/localhost.png
 
 ### Rutas
 
-Use the `@route()` decorator to bind URLs to your handler functions. Named parameters may be used to produce nice looking URLs.
+Se puede usar el decorador `@route()` para conectar URLs a las funciones manejadoras. El uso de parámetros con nombre permite producir URLs elegantes.
 
     #!Python
     @route('/hello/:name')
     def hello(name):
         return 'Hello, %s' % name
 
-### Templates
+### Plantillas
 
-Bottle includes a simple and lightning fast template engine called *SimpleTemplate*. Just return a dictionary filled with template variables and pass a template name to the `@view` decorator.
+Bottle incluye un *motor* de plantillas sencillo y muy rápido llamado *SimpleTemplate*. Basta con devolver un diccionario con variables de la plantilla y pasarle el nombre de la plantilla al decorador `@view`. Por ejemplo, este sería el código:
 
     #!Python
     @route('/hello/template/:names')
@@ -64,7 +64,7 @@ Bottle includes a simple and lightning fast template engine called *SimpleTempla
        names = names.split(',')
        return dict(title='Hello World', names=names)
 
-And here is the template in "./views/hello.tpl":
+y esta la plantilla que se guarda en "./views/hello.tpl":
 
     #!html
     <html>
@@ -78,14 +78,14 @@ And here is the template in "./views/hello.tpl":
      </body>
     </html>
 
-Bottle makes it easy to switch to other template engines. [mako][], [jinja2][] and [cheetah][] are supported.
+Bottle hace fácil cambiar a otros *motores* de plantilla. Se soportan [mako][], [jinja2][] y [cheetah][].
 
     #!Python
     from bottle import mako_view as view
 
-### Static Files, Redirects and HTTP Errors
+### Ficheros estáticos, redirecciones y errores HTTP
 
-Use these handy helpers for regular tasks.
+Se pueden usar funciones auxiliares para facilitar tareas habituales:
 
     #!Python
     from bottle import send_file, redirect, abort
