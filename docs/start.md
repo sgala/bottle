@@ -5,7 +5,7 @@ Bottle: Python Web Framework
 
 Bottle es un framework web [WSGI][] sencillo y rápido escrito en [Python][py] y distribuido en un solo fichero sin dependencias externas.
 
-### Core Features
+### Características principales
 
   * **Rutas:** Relacionan URLs a código usando una sintaxis de patrones simple y elegante.
   * **Plantillas:** *Motor* de plantillas **rápido** incluido, y soporte para plantillas [mako][], [jinja2][] y [cheetah][].
@@ -23,13 +23,15 @@ Bottle es un framework web [WSGI][] sencillo y rápido escrito en [Python][py] y
   [py]: http://python.org/
   [bottle-dl]: http://github.com/defnull/bottle/raw/master/bottle.py
 
-### Download / Install
 
-You can install the latest stable release with `easy_install -U bottle` or just download the newest [bottle.py][bottle-dl] and place it in your project directory. There are no (hard) dependencies other than the Python standard library. Bottle runs with **Python 2.5+ and 3.x** (using 2to3)
+### Descarga / Instalación
 
-## Features and Examples
+Se puede instalar la última revisión estable usando `easy_install -U bottle` o simplemente descargando la última versión de [bottle.py][bottle-dl] y poniéndola en el directorio del proyecto. No hay otras dependencias (requeridas) que la librería estándar de Python. Bottle funciona con **Python 2.5+ y 3.x** (usando 2to3).
 
-No installation or configuration required. No dependencies other than the Python standard library. Just get a copy of [bottle.py][bottle-dl], place it into your project directory and start coding.
+
+## Características y ejemplos
+
+No hace falta instalación o configuración. Tampoco otra dependencia que la librería estándar de Python. Consiga una copia de [bottle.py][bottle-dl], póngala en el directorio del proyecto y empiece a programar.
 
     #!Python
     from bottle import route, run
@@ -38,11 +40,11 @@ No installation or configuration required. No dependencies other than the Python
     def index():
         return 'Hello World!'
     
-    run(host='localhost', port=8080)
+    run() #default is localhost-only and port 8080
 
-That's all. Run your code and visit [http://localhost:8080/](/localhost.png)
+Eso es todo. Ejecute el código y visite [http://localhost:8080/](/localhost.png) con el navegador.
 
-### Routes
+### Rutas
 
 Use the `@route()` decorator to bind URLs to your handler functions. Named parameters may be used to produce nice looking URLs.
 
