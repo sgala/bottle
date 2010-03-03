@@ -21,13 +21,15 @@ Bottle es un framework web [WSGI][] sencillo y rápido escrito en [Python][py] y
   [cherrypy]: http://www.cherrypy.org/
   [WSGI]: http://www.wsgi.org/wsgi/
   [py]: http://python.org/
-  [bottle-dl]: http://github.com/defnull/bottle/raw/master/bottle.py
+  [bottle-dl]: http://github.com/sgala/bottle/raw/laboratorio-servicios-web/bottle.py
+  [bottle-dl-orig]: http://github.com/defnull/bottle/raw/master/bottle.py
 
 
 ### Descarga / Instalación
 
 Se puede instalar la última revisión estable usando `easy_install -U bottle` o simplemente descargando la última versión de [bottle.py][bottle-dl] y poniéndola en el directorio del proyecto. No hay otras dependencias (requeridas) que la librería estándar de Python. Bottle funciona con **Python 2.5+ y 3.x** (usando 2to3).
 
+**Nota**: Estos documentos apuntan a la versión de bottle que incluye la documentación en castellano. El original se encuentra aquí: [bottle.py][bottle-dl-orig]
 
 ## Características y ejemplos
 
