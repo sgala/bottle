@@ -102,9 +102,9 @@ Se pueden usar funciones auxiliares para facilitar tareas habituales:
     def restricted():
         abort(401, "Sorry, access denied.") # give error 401
 
-### POST, GET, Header and Cookies
+### POST, GET, Cabeceras y *Cookies*
 
-As easy as using a `dict()`
+Tan fácil manejarlos como usar un  diccionario (`dict()`)
 
     #!Python
     from bottle import request, response
@@ -123,10 +123,10 @@ As easy as using a `dict()`
         return 'OK'
 
 
-### HTTP Server
+### Servidor HTTP
 
-Bottle has a HTTP Server build in but also supports [cherrypy][], 
-[flup][], [paste][] and [fapws3][] as alternatives.
+Bottle incluye un servidor HTTP, pero soporta también otros como [cherrypy][], 
+[flup][], [paste][] y [fapws3][].
 
     #!Python
     from bottle import PasteServer
@@ -134,51 +134,51 @@ Bottle has a HTTP Server build in but also supports [cherrypy][],
     
     
    
-### Non-Features and Known Bugs
+### Bugs conocidos y *rarezas*
 
-Bottle does **not** include (yet):
+Bottle **no** incluye (todavía):
 
-  * Models and ORMs: Choose your own (SQLAlchemy, Elixir)
-  * HTML-Helper, Session, Identification and Authentication: Do it yourself
-  * Scaffolding: No, sorry
+  * Modelos and Gestores Objeto-Relacional (ORMs): Elege uno: SQLAlchemy, Elixir
+  * HTML-Helper, Sesiones, Identificación y Autenticación: Hágalo usted mismo
+  * Scaffolding: No tenemos de eso, lo siento
 
 
-## Voices
+## Otras voces
 
-[Kaelin](http://bitbucket.org/kaelin), 2009-10-22, [PyPi Comment](http://pypi.python.org/pypi/bottle):
+[Kaelin](http://bitbucket.org/kaelin), 2009-10-22, [Comentario en PyPi](http://pypi.python.org/pypi/bottle):
 
-> Bottle rocks! The fastest path I've found between idea and implementation for simple Web applications.
+> ¡Bottle mola! Es el camino más rápido que he encontrado entre idea e implementación para aplicaciones Web simples.
 
-[Seth](http://blog.curiasolutions.com/about/) in his [blog](http://blog.curiasolutions.com/2009/09/the-great-web-development-shootout/) [posts](http://blog.curiasolutions.com/2009/10/the-great-web-technology-shootout-round-3-better-faster-and-shinier/) about common web framework performance:
+[Seth](http://blog.curiasolutions.com/about/) en sus [entradas](http://blog.curiasolutions.com/2009/09/the-great-web-development-shootout/) de [blog](http://blog.curiasolutions.com/2009/10/the-great-web-technology-shootout-round-3-better-faster-and-shinier/) sobre prestaciones de frameworks para web:
 
-> As you can see, there was practically no difference in speed between Bottle and pure WSGI in a basic “hello world” test. Even with the addition of Mako and SQLAlchemy, Bottle performed significantly faster than a bare Pylons or Django setup. On a side note, adding a sample template using Bottle’s default templating package didn’t seem to change these numbers at all.
+> Como puede verse no hay prácticamente diferencia de velocidad entre Bottle y WSGI *puro* en un test “hello world” básico. Incluso añadiendo Mako y SQLAlchemy, Bottle tuvo unas prestaciones significativamente más rápidas que un montaje simple con Pylons o Django. Por cierto, añadir una plantilla de ejemplo usando el paquete de plantillas por defecto de Bottle no pareció cambiar en absoluto esos números.
 
-## Projects using Bottle
+## Proyectos que usan Bottle
 
-  * [whatismyencoding.com](http://whatismyencoding.com/) guesses the encoding of an URL or string.
-  * [nagios4iphone](http://damien.degois.info/projects/nagios4iphone/) A Nagios interface for iPhone without touching anything on your nagios servers.
-  * [flugzeit-rechner.de](http://www.flugzeit-rechner.de/) runs on Bottle and Jinja2.
-  * [Cuttlefish](http://bitbucket.org/kaelin/cuttlefish/) A browser-based search tool for quickly `grep`ing source code.
-  * [Torque](http://github.com/jreid42/torque) A multiuser collaborative interface for torrenting.
-  * [Message in a Bottle](http://github.com/kennyshen/MIAB) A simple community messaging app using Bottle and Cassandra.
-  * [ResBottle](http://github.com/tnm/redweb) A [Redis](http://code.google.com/p/redis/) web interface.
+  * [whatismyencoding.com](http://whatismyencoding.com/) calcula la codificación de una cadena o del contenido de una URL.
+  * [nagios4iphone](http://damien.degois.info/projects/nagios4iphone/) Una interfaz Nagios para iPhone sin modificar nada en los servidores Nagios.
+  * [flugzeit-rechner.de](http://www.flugzeit-rechner.de/) corre con Bottle y Jinja2.
+  * [Cuttlefish](http://bitbucket.org/kaelin/cuttlefish/) Una herramienta de búsqueda basada en navegador para hacer `grep` de código fuente rápidamente.
+  * [Torque](http://github.com/jreid42/torque) Una interfaz multiusuario colaborativa para torrentes.
+  * [Message in a Bottle](http://github.com/kennyshen/MIAB) Una aplicación simple de mensajería comunitaria que usa Bottle y Cassandra.
+  * [ResBottle](http://github.com/tnm/redweb) Una interfaz web para  [Redis](http://code.google.com/p/redis/).
 
-## Thanks to
+## Gracias a...
 
-In chronological order of their last contribution (DESC).
+En orden cronológico descendente de su última contribución contribution.
 
-  * [Jochen Schnelle](http://github.com/noisefloor) for his great [bottle tutorial](/page/tutorial)
-  * [Damien Degois](http://github.com/babs) for his `If-Modified-Since` support in `send_file()` and his excellent bug reports
-  * [Stefan Matthias Aust](http://github.com/sma) for his contribution to `SimpleTemplate` and `Jinja2Template`
-  * [DauerBaustelle](http://github.com/dauerbaustelle) for his ideas
-  * [smallfish](http://pynotes.appspot.com/) for his chinese translation of the bottle documentation
-  * [Johannes Schönberger](http://www.python-forum.de/user-6026.html) for his auto reloading code
-  * [clutchski](http://github.com/clutchski) for his `CGIAdapter` and CGI support
-  * huanguan1978 for his windows `send_file()` bug report and patch
-  * The [German Python Community](http://www.python-forum.de/topic-19451.html) for their support and motivation
+  * [Jochen Schnelle](http://github.com/noisefloor) por su gran [tutorial de bottle](/page/tutorial)
+  * [Damien Degois](http://github.com/babs) por el soporte a `If-Modified-Since` en `send_file()` y sus excelentes informes de errores
+  * [Stefan Matthias Aust](http://github.com/sma) por su contribución a `SimpleTemplate` y `Jinja2Template`
+  * [DauerBaustelle](http://github.com/dauerbaustelle) por sus ideas
+  * [smallfish](http://pynotes.appspot.com/) por su traducción al chino de la documentación de bottle
+  * [Johannes Schönberger](http://www.python-forum.de/user-6026.html) por su código de autorecarga
+  * [clutchski](http://github.com/clutchski) por su `CGIAdapter` y el soporte a CGI
+  * huanguan1978 por su informe de error sobre `send_file()` para windows y su parche
+  * La [comunidad Python de Alemania](http://www.python-forum.de/topic-19451.html) por su soporte y motivación
   
 
-## Licence (MIT)
+## Licencia (MIT)
 
    Copyright (c) 2009, Marcel Hellkamp.
 
