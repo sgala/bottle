@@ -92,15 +92,15 @@ Use these handy helpers for regular tasks.
     
     @route('/static/:filename')
     def static_file(filename):
-        send_file(filename, root='/path/to/static/files')
+        send_file(filename, root='/path/to/static/files') # send static file
 
     @route('/wrong/url')
     def wrong():
-        redirect("/right/url")
+        redirect("/right/url") # redirect to given URL
 
     @route('/restricted')
     def restricted():
-        abort(401, "Sorry, access denied.")
+        abort(401, "Sorry, access denied.") # give error 401
 
 ### POST, GET, Header and Cookies
 
