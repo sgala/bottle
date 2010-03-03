@@ -3,14 +3,14 @@ Bottle: Python Web Framework
 
 <div style="float: right; padding: 0px 0px 2em 2em"><img src="/bottle-logo.png" alt="Botle Logo" /></div>
 
-Bottle is a fast and simple [WSGI][] web-framework for [Python][py] packed into a single file with no external dependencies.
+Bottle es un framework web [WSGI][] sencillo y rápido escrito en [Python][py] y distribuido en un solo fichero sin dependencias externas.
 
 ### Core Features
 
-  * **Routes:** Mapping URLs to code with a simple but powerful pattern syntax.
-  * **Templates:** Fast build-in template engine and support for [mako][], [jinja2][] and [cheetah][] templates.
-  * **Server:** Build-in HTTP development server and support for [paste][], [fapws3][], [flup][], [cherrypy][] or any other [WSGI][] capable server.
-  * **No dependencies:** All in a single file and no dependencies other than the Python standard library.
+  * **Rutas:** Relacionan URLs a código usando una sintaxis de patrones simple y elegante.
+  * **Plantillas:** *Motor* de plantillas **rápido** incluido, y soporte para plantillas [mako][], [jinja2][] y [cheetah][].
+  * **Servidor:** Servidor HTTP para desarrollo includio, y soporte para [paste][], [fapws3][], [flup][], [cherrypy][] o cualquier otro servidor compatible con [WSGI][].
+  * **Sin dependencias:** Todo en un solo archivo y sin otra dependencia que la librería estándar de Python.
 
   [mako]: http://www.makotemplates.org/
   [cheetah]: http://www.cheetahtemplate.org/
