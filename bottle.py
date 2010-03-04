@@ -735,7 +735,7 @@ class Response(threading.local):
 
     @property
     def charset(self):
-        """ Return the charset specified tin the content-type header.
+        """ Return the charset specified in the content-type header.
         
             This defaults to `UTF-8`.
         """
