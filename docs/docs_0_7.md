@@ -30,42 +30,42 @@ Comencemos por un ejemplo muy sencillo: el *clásico* **Hola, Mundo**
         return "¡Hola, Mundo!"
     run() # This starts the HTTP server
 
-Run this script, visit <http://localhost:8080/hello> and you will see "Hello World!" in your Browser. So, what happened here?
+Ejecute este *script* y luego visite <http://localhost:8080/hello> y verá "¡Hola, Mundo!" en su navegador. ¿Qué ha pasado al lanzarlo?
 
-  1. First we imported some bottle components. The `route()` decorator and the `run()` function. 
-  2. The `route()` [decorator][] is used do bind a piece of code to an URL. In this example we want to answer requests to the `/hello` URL.
-  3. This function will be called every time someone hits the `/hello` URL on the web server. It is called a __handler function__ or __callback__.
-  4. The return value of a handler function will be sent back to the Browser.
-  5. Now it is time to start the actual HTTP server. The default is a development server running on *localhost* port *8080* and serving requests until you hit __Ctrl-C__
-
-
+  1. Primero importamos algunos componentes de bottle. El decorador `route()` y la función `run()`. 
+  2. El [decorador][decorator] `route()` se usa para conectar parte de nuestro código a una URL. En este  ejemplo queremos responder peticiones que se hagan a la URL `/hello`.
+  3. Se llamará a esta función cada vez que alguien pida la URL `/hello` en el servidor. Se llama una __función controladora__ (*handler* o *callback*).
+  4. El valor que devuelva una función controladora se envía de vuelta al navegador.
+  5. Ahora podermos arrancar el servidor HTTP. Por defecto se arrancará un servidor de desarrollo que corre __sólo__ en *localhost*, en el puerto *8080*. Servirá peticiones hasta que pulsemos __Ctrl-C__.
 
 
-# Routing
 
-Routes are used to map an URL to a callback function that generate the content for that specific URL. Bottle has a `route()` decorator to do that. You can add any number of routes to a callback.
+
+# Rutas
+
+Se usan rutas para conectar una URL a una función (*callback*) que genera el contenido de esa URL específica. Bottle tiene un decorador `route()` que hace eso. Se le puede añadir cualquier número de rutas a una función controladora.
 
     #!Python
     from bottle import route
     @route('/')
     @route('/index.html')
     def index():
-        return "<a href='/hello'>Go to Hello World page</a>"
+        return "<a href='/hello'>Ir a la página 'Hola, Mundo'</a>"
 
     @route('/hello')
     def hello():
-        return "Hello World!"
+        return "¡Hola, Mundo!"
 
-As you can see, URLs and routes have nothing to do with actual files on the web server. Routes are unique names for your callbacks, nothing more and nothing less. Requests to URLs not matching any routes are answered with a 404 HTTP error page. Exceptions within your handler callbacks will cause a 500 error. 
-
-
+Como puede ver, las URLs y las rutas no tienen nada que ver con ficheros reales en el servidor web. Las rutas son nombres únicos para las funciones controladoras, nada más y nada menos. Las peticiones a URLs que no encajen con ninguna ruta se responden con una página de error HTTP 404. Las exceptions que ocurran dentro de una función controladora causarán una respuesta de error HTTP 500. 
 
 
 
-## HTTP Request Methods
 
-The `route()` decorator has an optional keyword argument `method` which defaults to `method='GET'`; only GET requests get answered by that route.
-Possible values are `POST`, `PUT`, `DELETE`, `HEAD`, or any other [HTTP request method][http_method] you want to listen to. Also `ANY` which will be used as fallback for any method. As an alternative, you can use the `@get()`, `@post()`, `@put()` and `@delete()` aliases.
+
+## Métodos de petición HTTP
+
+El decorador `route()` tiene un argumento opcional con nombre, llamado `method`, que toma como valor por defecto `method='GET'`; eso quiere decir que sólo se reponden peticiones de tipo GET por esa ruta.
+Los valores posibles de ese argumento son `POST`, `PUT`, `DELETE`, `HEAD`, o cualquier otro [método de HTTP][http_method] que queramos responder. Se puede usar también `ANY` para crear una ruta que se usará para cualquier método que no tenga una específica. Como una alternativa al parámetro `method` se pueden usar los decoradores `@get()`, `@post()`, `@put()` y `@delete()`.
 
     #!Python
     from bottle import post, request
@@ -75,43 +75,43 @@ Possible values are `POST`, `PUT`, `DELETE`, `HEAD`, or any other [HTTP request 
         do_something_with(form_data)
         return "Done"
 
-\* In this example we used [request.POST](#working-with-http-requests) to access POST form data.
+\* En este ejemplo usamos [request.POST](#working-with-http-requests) para acceder a  datos del formulario POST.
 
-Note that `HEAD` requests will fall back to `GET` routes and all requests will fall back to `ANY` routes, if there is no matching route for the original request method.
-
-
+Nótese que las peticiones `HEAD` se responden con la ruta `GET` si no tienen una específica. Como ya dijimos, cualquier petición se procesará en la ruta `ANY` si no existe una ruta para el método de petición original.
 
 
 
 
-## Dynamic Routes
 
-Static routes are fine, but URLs may carry information as well. Let's add a `:name` placeholder to our route.
+
+## Rutas Dinámicas
+
+Las rutas estáticas están bien, per las URLs pueden también incluir información. Vamos a añadirle una variable `:name` a nuestra ruta.
 
     #!Python
     from bottle import route
     @route('/hello/:name')
     def hello(name):
-        return "Hello %s!" % name
+        return "¡Hola, %s!" % name
 
-This dynamic route matches `/hello/alice` as well as `/hello/bob`. In fact, the `:name` part will match everything but a slash (`/`), so any name is possible. `/hello/bob/and/alice` or `/hellobob` won't match. Each part of the URL covered by a placeholder is provided as a keyword argument to your handler callback.
+Esta ruta dinámica se aplica a `/hello/alice` y también a `/hello/bob`. De hecho, la parte `:name` *captura* cualquier cosa que no sea una barra inclindad (`/`), así que podemos usar cualquier nombre. `/hello/bob/and/alice` o `/hellobob` no funcionan. Cada parte de la URL que *encaja* en una variable le llega a la función controladora como argumento con nombre, usando el nombre tras los `:`.
 
-A normal placeholder matches everything up to the next slash. To change that, you can add a regular expression pattern:
+Una variable normal captura cualquier cosa hasta la siguiente barra inclinada. Para cambiarlo, se puede añadir un patrón en forma de expresión regular:
 
     #!Python
     from bottle import route
     @route('/get_object/:id#[0-9]+#')
     def get(id):
-        return "Object ID: %d" % int(id)
+        return "ID de Objeto: %d" % int(id)
 
-As you can see, URL parameters remain strings, even if they are configured to only match digits. You have to explicitly cast them into the type you need.
-
-
+Se puede ver que los parámetros de URL siguen siendo cadenas, incluso cuando hacemos que sólo los enteros *encajen*. Hay que convertirlos explícitamente al tipo que necesitemos.
 
 
-## The @validate() decorator
 
-Bottle offers a handy decorator called `validate()` to check and manipulate URL parameters. It takes callables (function or class objects) as keyword arguments and filters every URL parameter through the corresponding callable before they are passed to your request handler.
+
+## El decorador @validate()
+
+Bottle ofrece también un decorador muy cómodo, llamado `validate()`, para comprobar y manipular parámetros de la URL. Acepta un *llamable* (funciones or clases) como argumentos con nombre, y filtra el parámetro de la URL de ese nombre a través del *llamable* antes de pasarlos al manejador de peticiones.
 
     #!Python
     from bottle import route, validate
@@ -121,40 +121,37 @@ Bottle offers a handy decorator called `validate()` to check and manipulate URL 
     def validate_test(i, f, csv):
         return "Int: %d, Float:%f, List:%s" % (i, f, repr(csv))
 
-You may raise `ValueError` in your custom callable if a parameter does not validate.
+Se puede lanzar (`raise`) la excepción `ValueError` en los llamables que escribamos si un parámetro no valida correctamente.
 
 
 
 
-# Generating content
+# Generación de contenido
 
-The [WSGI specification][wsgi] expects an iterable list of byte strings to be returned from your application and can't handle file objects, unicode, dictionaries or exceptions.
+La [epecificación WSGI][wsgi] espera que la aplicación devuelva un iterable que produzca una secuencia de cadenas de bytes, y no sabe manejar ficheros, unicode, diccionarios or excepciones.
 
     #!Python
     @route('/wsgi')
     def wsgi():
-        return ['WSGI','wants a','list of','strings']
+        return ['WSGI','quiere una','lista de','cadenas']
 
-Bottle automatically tries to convert anything to a WSGI supported type, so you
-don't have to. The following examples will work with Bottle, but won't work with
-pure WSGI.
+Bottle intenta automáticamente convertir el resultado de nuestra manejadora a un tipo soportado por WSGI, de forma que nosotros no tengamos que hacerlo.
+Los ejemplos siguientes funcionarán con Bottle, pero fallarán si usamos una herramienta de  desarrollo WSGI *pura*.
 
-## Strings and Unicode
+## Cadenas y Unicode
 
-Returning strings (bytes) is not a problem. Unicode however needs to be encoded into a byte stream before 
-the webserver can send it to the client. Ths default encoding is utf-8. If that fits your needs, you can 
-simply return unicode or unicode iterables.
+Devolver cadenas (de bytes) no es un problema. Si usamos unicode, en cambio, necesitamos codificarlo en una cadena de bytes antes de que el servidor web pueda enviarlo a los clientes. La codificación por defecto es __utf-8__. Si eso no supone un problema, se puede simplemente devolver cadenas unicode, o bien iterables que produzcan unicode, o cadenas unicode.
 
     #!Python
     @route('/string')
     def get_string():
-        return 'Bottle converts strings to iterables'
+        return 'Bottle convierte las cadenas en iterables'
     
     @route('/unicode')
     def get_unicode():
-        return u'Unicode is encoded with UTF-8 by default'
+        return u'El unicode se codifica usando UTF-8 por defecto'
 
-You can change Bottles default encoding by setting `response.content_type` to a value containing a `charset=...` parameter or by changing `response.charset` directly.
+Se puede cambiar la codificación por defecto de Bottles cambiando el valor de `response.content_type` a un valor que contenga un parámetro `charset=...` o cambiando directamente `response.charset`.
 
     #!Python
     from bottle import response
