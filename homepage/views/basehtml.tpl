@@ -17,7 +17,7 @@
       <ul>
         <li><a href="/">Origen</a></li>
         <li><a href="/blog">Entradas de Blog</a></li>
-        <li><a href="/page/docs">Documentación</a></li>
+        <li><a href="/page/docs_0_7">Documentación</a></li>
         <li><a href="/page/tutorial">Tutorial</a></li>
         <li><a href="/page/faq">F.A.Q.</a></li>
         <li><a href="/page/contact">Contacto</a></li>
