@@ -272,12 +272,9 @@ TODO: Se puede almacenar objetos python y listas en las *cookies*. Cuando se hac
 
 ## Valores GET y POST
 
-Query strings and/or POST form submissions are parsed into dictionaries and made
-available as `request.GET` and `request.POST`. Multiple values per
-key are possible, so each value of these dictionaries may contain a string
-or a list of strings.
+La cadena de petición (*query string*) y/o los datos de formularios POST se analizan y se guardan en diccionarios, disponibles como `request.GET` y `request.POST` respectivamente. Pueden aparecer valores múltiples por cada clave, así que cada valor de esos diccionarios puede contener tanto una cadena como una lista de cadenas.
 
-You can use `.getone(key[, default])` to get a single value only.
+Se puede usar `.getone(key[, default])` para estar seguro de que devuelve un sólo valor.
 
     #!Python
     from bottle import route, request
@@ -285,14 +282,14 @@ You can use `.getone(key[, default])` to get a single value only.
     def do_search():
         query = request.POST.getone('query', '').strip()
         if not query:
-            return "You didn't supply a search query."
+            return "No proporcionó una variable 'query' en la petición."
         else:
-            return 'You searched for %s.' % query
+            return 'Buscó Vd. %s.' % query
 
 
-## File Uploads
+## Subida de ficheros
 
-Bottle handles file uploads similar to normal POST form data. Instead of strings, you will get file-like objects. 
+Bottle maneja la subida de ficheros de forma similar a los datos de formularios POST. En lugar de una cadena, se encontrará un objeto parecido a un fichero. 
 
     #!Python
     from bottle import route, request
@@ -301,7 +298,7 @@ Bottle handles file uploads similar to normal POST form data. Instead of strings
         datafile = request.POST.get('datafile')
         return datafile.read()
 
-Here is an example HTML Form for file uploads
+El siguiente formulario HTML se puede usar para subir ficheros en combinación con el manejador del ejemplo anterior:
 
     #!html
     <form action="/upload" method="post" enctype="multipart/form-data">
@@ -310,59 +307,52 @@ Here is an example HTML Form for file uploads
 
 
 
-# Templates
+# Plantillas
 
-Bottle uses its own little template engine by default. You can use a template by
-calling `template(template_name, **template_arguments)` and returning
-the result.
+Bottle usa por defecto su propio pequeño *motor* de plantillas. Se puede usar una plantilla llamando `template(template_name, **template_arguments)` y devolviendo el resultado.
 
     #!Python
     @route('/hello/:name')
     def hello(name):
         return template('hello_template', username=name)
 
-This will load the template `hello_template.tpl` with the `username` variable set to the URL `:name` part and return the result as a string.
+El ejemplo anterior cargará la plantilla `hello_template.tpl` dándole a la variable `username` la parte `:name` de la URL, y devolverá el resultado como una cadena.
 
-The `hello_template.tpl` file could look like this:
+El fichero `hello_template.tpl` podría tener este aspecto:
 
     #!html
-    <h1>Hello {{username}}</h1>
-    <p>How are you?</p>
+    <h1>Hola {{username}}</h1>
+    <p>¿Cómo estás?</p>
 
 
 
 
-## Template search path
+## Camino de búsqueda de plantillas
 
-The list `bottle.TEMPLATE_PATH` is used to map template names to actual 
-file names. By default, this list contains `['./%s.tpl', './views/%s.tpl']`.
-
-
-
-
-## Template caching
-
-Templates are cached in memory after compilation. Modifications made to 
-the template file will have no affect until you clear the template 
-cache. Call `bottle.TEMPLATES.clear()` to do so.
+La lista `bottle.TEMPLATE_PATH` se utiliza para mapear nombres de plantilla a nombres de fichero. Por defecto, esta lista contiene `['./%s.tpl', './views/%s.tpl']`.
 
 
 
 
-## Template Syntax
+## Caché de plantillas
 
-The template syntax is a very thin layer around the Python language. 
-It's main purpose is to ensure correct indention of blocks, so you 
-can format your template without worrying about indentions. Here is the 
-complete syntax description:
+La plantillas se salvan en memoria después de compilarlas. Las modificaciones que se le hagan al fichero de la plantilla no tendrán efecto hasta que se borre la caché de plantillas. Para hacerlo llame a `bottle.TEMPLATES.clear()`.
 
-  * `%...` starts a line of python code. You don't have to worry about indentions. Bottle handles that for you.
-  * `%end` closes a Python block opened by `%if ...`, `%for ...` or other block statements. Explicitly closing of blocks is required.
-  * `{{...}}` prints the result of the included python statement.
-  * `%include template_name optional_arguments` allows you to include other templates.
-  * Every other line is returned as text.
 
-Example:
+
+
+## Sintaxis de las plantillas
+
+La sintaxis de las plantillas es una capa muy fina sobre el lenguaje Python. 
+Su propósito principal es asegurar la indentación correcta de los bloques, de manera que se pueda dar formato a la plantilla sin tener que preocuparse por el sangrado. Véase la descripción completa de la sintaxis:
+
+  * `%...` comienza una línea de código Python. No hay que preocuparse por el sangrado, Bottle lo maneja.
+  * `%end` cierra un bloque de Python abierto usando `%if ...`, `%for ...` o bien otras sentencias de bloque. Se requiere cerrar los bloques explícitamente.
+  * `{{...}}` imprime el resultado de la expresión python incluida.
+  * `%include template_name argumentos_opcionales` permite incluir otras plantillas.
+  * El resto de las líneas se devuelve como texto.
+
+Ejemplo:
 
     #!html
     %header = 'Test Template'
