@@ -12,23 +12,22 @@
   [paste]: http://pythonpaste.org/
   [wsgi]: http://www.wsgi.org/wsgi/
 
-# Bottle Documentation
+# Documentación de Bottle
 
-__This document is a work in progress__ and intended to be a tutorial, howto and an api documentation at the same time. If you have questions not answered here,
-please check the [F.A.Q.](/page/faq) or file a ticket at bottles [issue tracker](http://github.com/defnull/bottle/issues).
+__Este documento está sujeto a cambio permanente__ y trata de ser una guía de uso, una guía *cómo* y documentación de la api. Si tiene cuestiones sin respuesta en este documento, compruebe si están en las [P.U.F. (F.A.Q.)](/page/faq) o bien escriba un informe de error en el [sistema de errores](http://github.com/defnull/bottle/issues) de bottle.
 
-This documentation describes the features of the **0.7 Release**
+Esta documentación describe las características de la **versión 0.7**. Puede consultar los [documentos de la versión 0.6.4](/page/docs) en inglés.
 
 
-## "Hello World" in a Bottle
+## "Hola, Mundo" en una botella
 
-Lets start with a very basic example: Hello World
+Comencemos por un ejemplo muy sencillo: el *clásico* **Hola, Mundo**
 
     #!Python
     from bottle import route, run
     @route('/hello')
     def hello():
-        return "Hello World!"
+        return "¡Hola, Mundo!"
     run() # This starts the HTTP server
 
 Run this script, visit <http://localhost:8080/hello> and you will see "Hello World!" in your Browser. So, what happened here?
