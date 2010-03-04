@@ -165,11 +165,11 @@ Se puede cambiar la codificación por defecto de Bottles cambiando el valor de `
         response.content_type = 'text/html; charset=latin9'
         return u'ISO-8859-15 is also known as latin9.'
 
-In some rare cases the Python encoding names differ from the names supported by the HTTP specification. Then, you have to do both: First set the `response.content_type` header (which is sent to the client unchanged) and then set the `response.charset` option (which is used to decode unicode).
+En algunos casos raros los nombres de las codificaciones de Python difieren de los nombres soportados en la especificación HTTP. En ese caso hay que hacer ambas cosas: primero cambiar la cabecera `response.content_type`, que se envía al cliente sin cambiar, y también poner la opción `response.charset`, que se utiliza para decodificar unicode.
 
-## File Objects and Streams
+## Ficheros y flujos de bytes (*streams*)
 
-Bottle passes everything that has a `read()` method (file objects) to the `wsgi.file_wrapper` provided by your WSGI server implementation. This wrapper should use optimised system calls (`sendfile` on UNIX) to transfer the file contents.
+Bottle pasa todo objeto que tenga un método `read()` (objetos de tipo `file`) al `wsgi.file_wrapper` que proporciona la implementación de servidor WSGI. Este *llamable* debería usar llamadas al sistema optimizadas (por ejemplo `sendfile` en UNIX) para transferir los contenidos del fichero.
 
     #!Python
     @route('/file')
@@ -178,16 +178,16 @@ Bottle passes everything that has a `read()` method (file objects) to the `wsgi.
 
 ## JSON
 
-Even dictionaries are allowed. They are converted to [json](http://de.wikipedia.org/wiki/JavaScript_Object_Notation) and returned with the `Content-Type` header set to `application/json`. To disable this feature (and pass dicts to your middleware) you can set `bottle.app().autojson` to `False`.
+También pueden devolverse diccionarios. Se convierten en [json](http://de.wikipedia.org/wiki/JavaScript_Object_Notation) y se devuelven con la cabecera `Content-Type` puesta a `application/json`. Para deshabilitar esta característica, y pasar, por ejemplo, diccionarios a algún *middleware*, se puede poner `bottle.app().autojson` a `False`.
 
     #!Python
     @route('/api/status')
     def api_status():
         return {'status':'online', 'servertime':time.time()}
 
-## Static Files
+## Ficheros estáticos
 
-You can directly return file objects, but `static_file()` is the recommended way to serve static files. It automatically guesses a mime-type, adds a `Last-Modified` header, restricts paths to a `root` directory for security reasons and generates appropriate error responses (401 on permission errors, 404 on missing files). It even supports the `If-Modified-Since` header and eventually generates a `304 Not modified` response. You can pass a custom mimetype to disable mimetype guessing.
+Ya hemos dicho que se puede devolver directamente ficheros (objetos de tipo `file`). Sin embargo la manera recomendada de servir ficheros estáticos es `static_file()`. Automáticamente adivina el tipo MIME, añade una cabecera `Last-Modified`, restringe las rutas a un directorio raiz (`root`) por razones de seguridad y genera las respuestas de error apropiadas: 401 para los errores de permisos, 404 si falta el fichero. Incluso soporta la cabecera `If-Modified-Since` y genera en caso necesario una respuesta `304 Not modified`. Se le puede pasar un `mimetype` para deshabilitar el intento de adivinarlo.
 
     #!Python
     from bottle import static_file
@@ -200,19 +200,19 @@ You can directly return file objects, but `static_file()` is the recommended way
     def send_file(filename):
         return static_file(filename, root='/path/to/static/files')
 
-You can raise the return value of `static_file()` as an exception if you really need to. The raised `HTTPResponse` exception is handled by the Bottle framework. 
+EL valor que devuelve `static_file()` se puede lanzar (`raise`) como excepción si es necesario. Bottle sabe manejar la excepción `HTTPResponse`. 
 
-## HTTPError, HTTPResponse and Redirects
+## HTTPError, HTTPResponse y redirecciones
 
-The `abort(code[, message])` function is used to generate [HTTP error pages][http_code].
+La función `abort(code[, message])` se usa para generar [páginas de error HTTP][http_code].
 
     #!Python
     from bottle import route, redirect, abort
     @route('/restricted')
     def restricted():
-        abort(401, "Sorry, access denied.")
+        abort(401, "Lo siento, se le deniega el acceso.")
 
-To redirect a client to a different URL, you can send a `303 See Other` response with the `Location` header set to the new URL. `redirect(url[, code])` does that for you. You may provide a different HTTP status code as a second parameter.
+Para reenviar un cliente a una URL distinta, se puede enviar una respuesta `303 See Other` con la cabecera `Location` indicando la nueva URL. `redirect(url[, code])` hace exactamente eso. Se puede proporcionar otro código de estado HTTP como un segundo parámetro.
 
     #!Python
     from bottle import redirect
@@ -220,57 +220,57 @@ To redirect a client to a different URL, you can send a `303 See Other` response
     def wrong():
         redirect("/right/url")
 
-Both functions interrupt your handler code by raising a `HTTPError` exception.
+Ambas funcionees terminan la ejecución del código manejador, ya que lanzan una excepción de tipo `HTTPError`.
 
-You can return `HTTPError` exceptions instead of raising them. This is faster than raising and capturing Exceptions, but does exactly the same.
+Se puede también devolver excepciones `HTTPError` en vez de usar `raise`. Es más rápido que lanzar y capturar excepciones, y hace exactamente lo mismo.
 
     #!Python
     from bottle import HTTPError
 
     @route('/denied')
     def denied():
-        return HTTPError(401, 'Access denied!')
+        return HTTPError(401, '¡Acceso denegado!')
 
-## Exceptions
+## Excepciones
 
-All exceptions other than `HTTPResponse` or `HTTPError` will result in a `500 Internal Server Error` response, so they won't crash your WSGI server. You can turn off this behaviour to handle exceptions in your middleware by setting `bottle.app().catchall` to `False`.
+Cualquier excepción distinta de `HTTPResponse` o `HTTPError` resultará en una respuesta de tipo `500 Internal Server Error`, que bottle captura para que no aborte el servidor WSGI. Se puede eliminar este comportamiento, de manera que se puedan manejar excepciones en el middleware dándole a `bottle.app().catchall` el valor `False`.
 
-# Working with HTTP Requests
+# Manejo de peticiones HTTP
 
-Bottle parses the HTTP request data into a thread-save `request` object and provides some useful tools and methods to access this data. Most of the parsing happens on demand, so you won't see any overhead if you don't need the result. Here is a short summary:
+Bottle analiza los datos de la petición HTTP y los almacena en un objeto `request` seguro con respecto a hilos (*thread-safe*) y proporciona algunas herramientas y métodos útiles para acceder a esos datos. La mayor parte del análisis ocurre sólo se se piden resultados, de manera que no se gastan recursos si no se necesita el resultado. Un corto resumen:
 
-  * `request[key]`: A shortcut for `request.environ[key]`
-  * `request.environ`: WSGI environment dictionary. Use this with care.
-  * `request.app`: Currently used Bottle instance (same as `bottle.app()`)
-  * `request.method`: HTTP request-method (GET,POST,PUT,DELETE,...).
-  * `request.query_string`: HTTP query-string (http://host/path?query_string)
-  * `request.path`: Path string that matched the current route.
-  * `request.fullpath`: Full path including the `SCRIPT_NAME` part.
-  * `request.url`: The full URL as requested by the client (including `http(s)://` and hostname)
-  * `request.input_length` The Content-Length header (if present) as an integer.
-  * `request.header`: HTTP header dictionary.
-  * `request.GET`: The parsed content of `request.query_string` as a dict. Each value may be a string or a list of strings.
-  * `request.POST`: A dict containing parsed form data. Supports URL- and multipart-encoded form data. Each value may be a string, a file or a list of strings or files.
-  * `request.COOKIES`: The cookie data as a dict.
-  * `request.params`: A dict containing both, `request.GET` and `request.POST` data.
-  * `request.body`: The HTTP body of the request as a buffer object.
-  * `request.auth`: HTTP authorisation data as a named tuple. (experimental)
-  * `request.get_cookie(key[, default])`: Returns a specific cookie and decodes secure cookies. (experimental)
+  * `request[key]`: Atajo en lugar de escribir `request.environ[key]`
+  * `request.environ`: El diccionario de entorno WSGI. Úsese cuidadosamente.
+  * `request.app`: La instancia actual de Bottle (lo mismo que `bottle.app()`)
+  * `request.method`: Método de petición HTTP (GET,POST,PUT,DELETE,...).
+  * `request.query_string`: Cadena de petición HTTP (http://host/path?query_string)
+  * `request.path`: Parte del camino que se emparejó en la ruta actual.
+  * `request.fullpath`: Camino completo, incluyendo la parte `SCRIPT_NAME` (nombre del script).
+  * `request.url`: La URL completa que pidió el cliente (incluye `http(s)://` y el nombre de host)
+  * `request.input_length` La cabecera Content-Length (si está presente) como un entero.
+  * `request.header`: Diccionario de cabeceras HTTP.
+  * `request.GET`: El contenido de `request.query_string` analizado como un `dict`. Cada valor puede ser una cadena o una lista de cadenas.
+  * `request.POST`: Un `dict` que contiene datos de formulario analizados. Soporta tanto  URL-encoded como multipart-encoded. Cada valor puede ser una cadena, un fichero o una lista de cadenas o ficheros.
+  * `request.COOKIES`: Las *cookies* como un `dict`.
+  * `request.params`: Un `dict` que contiene tanto los datos de `request.GET` como los de `request.POST`. Si un valor está en los dos, se usan los datos de **POST**.
+  * `request.body`: El cuerpo HTTP de la petición como un objeto de tipo `buffer`.
+  * `request.auth`: Los datos de autorización HTTP como una tupla con nombre (`collections.namedtuple`). (experimental)
+  * `request.get_cookie(key[, default])`: Devuelve una cookie específica, y decodifica *cookies* seguras. (experimental)
 
 
-## Cookies
+## *Cookies* ("galletitas")
 
-Bottle stores cookies sent by the client in a dictionary called `request.COOKIES`. To create new cookies, the method `response.set_cookie(name, value[, **params])` is used. It accepts additional parameters as long as they are valid cookie attributes supported by [SimpleCookie](http://docs.python.org/library/cookie.html#morsel-objects).
+Bottle almacena las *cookies* que envía el cliente en un diccionario llamado `request.COOKIES`. Para crear nuevas *cookies* se usa el método `response.set_cookie(name, value[, **params])`. Acepta parámetros adicionales siempre que sean atributos válidos para la cooke, soportados por la librería [SimpleCookie](http://docs.python.org/library/cookie.html#morsel-objects).
 
     #!Python
     from bottle import response
     response.set_cookie('key','value', path='/', domain='example.com', secure=True, expires=+500, ...)
 
-To set the `max-age` attribute use the `max_age` name.
+Para dar valor al atributo `max-age` utilice el nombre `max_age`.
 
-TODO: It is possible to store python objects and lists in cookies. This produces signed cookies, which are pickled and unpickled automatically. 
+TODO: Se puede almacenar objetos python y listas en las *cookies*. Cuando se hace así se producen *cookies* firmadas, que se codifican y decodifican, con `pickle`, automáticamente. 
 
-## GET and POST values
+## Valores GET y POST
 
 Query strings and/or POST form submissions are parsed into dictionaries and made
 available as `request.GET` and `request.POST`. Multiple values per
