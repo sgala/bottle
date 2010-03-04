@@ -1567,7 +1567,7 @@ ERROR_PAGE_TEMPLATE = """<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 request = Request()
 """ Whenever a page is requested, the :class:`Bottle` WSGI handler stores
 metadata about the current request into this instance of :class:`Request`.
-It is thread-save and can be accessed from within handler functions. """
+It is thread-safe and can be accessed from within handler functions. """
 
 response = Response()
 """ The :class:`Bottle` WSGI handler uses metasata assigned to this instance
