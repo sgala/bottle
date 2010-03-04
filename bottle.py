@@ -1479,8 +1479,11 @@ def view(tpl_name, **defaults):
         @functools.wraps(func)
         def wrapper(*args, **kargs):
             tplvars = dict(defaults)
-            tplvars.update(func(*args, **kargs))
-            return template(tpl_name, **tplvars)
+            result = func(*args, **kargs)
+            if isinstance(result, dict):
+                tplvars.update(result)
+                return template(tpl_name, **tplvars)
+            return result
         return wrapper
     return decorator
 
