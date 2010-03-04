@@ -134,8 +134,7 @@ Bottle incluye un servidor HTTP, pero soporta también otros como [cherrypy][],
     from bottle import PasteServer
     run(server=PasteServer)
     
-    
-   
+
 ### Bugs conocidos y *rarezas*
 
 Bottle **no** incluye (todavía):
