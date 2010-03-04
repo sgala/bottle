@@ -167,7 +167,7 @@ Bottle **no** incluye (todavía):
 
 ## Gracias a...
 
-En orden cronológico descendente de su última contribución contribution.
+En orden cronológico descendente de su última contribución.
 
   * [Jochen Schnelle](http://github.com/noisefloor) por su gran [tutorial de bottle](/page/tutorial)
   * [Damien Degois](http://github.com/babs) por el soporte a `If-Modified-Since` en `send_file()` y sus excelentes informes de errores

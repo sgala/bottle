@@ -42,7 +42,7 @@
     %include
 
     <div id='footer'>
-      <div>Sitio web construido con <a href="/"><img src="/bottle-sig.png" /></a> <small>(Version {{version}})</small></div>
+      <div>Sitio web construido con <a href="/"><img src="/bottle-sig.png" /></a> <small>(Versión {{version}})</small></div>
       <div>Ver código fuente en <a href="http://github.com/defnull/bottle">GitHub</a></div>
     </div>
   </body>
