@@ -134,4 +134,4 @@ def bloglist():
 
 # Start server
 #bottle.debug(True)
-bottle.run(host='0.0.0.0', reloader=False, port=int(sys.argv[1]), server=bottle.PasteServer)
+bottle.run(host='0.0.0.0', reloader=False, port=int(sys.argv[1]))
