@@ -447,49 +447,55 @@ Durante el desarrollo es necesario rearrancar el servidor con frecuencia para pr
 
 Veamos cómo funciona: El proceso principal no arranca un servidor, sino que lanza un proceso hijo con los mismos argumentos de línea de comandos que se usaron para arrancar el proceso principal. Al actuar así, hay que tener cuidado: ¡Todo el código en el nivel de módulo se ejecuta al menos dos veces!.
 
-El proceso hijo tendrá definido `os.environ['BOTTLE_CHILD']` con el valor `true` 
-y comenand start as a normal non-reloading app server. As soon as any of the 
-loaded modules changes, the child process is terminated and respawned by 
-the main process. Changes in template files will not trigger a reload. 
-Please use debug mode to deactivate template caching.
+El proceso hijo tendrá definido `os.environ['BOTTLE_CHILD']` con el valor `true`
+y comenzará como un servidor de aplicaciones normal, sin auto recarga. Tan pronto como 
+cambie alguno de los módulos cargados, el proceso hijo se termina y se vuelve a lanzar 
+por el proceso principal. Los cambios en ficheros de plantilla no desencadenarán una 
+recarga. Use el modo de depuración si quiere desactivar el caché de plantillas.
 
-The reloading depends on the ability to stop the child process. If you are
-running on Windows or any other operating system not supporting 
-`signal.SIGINT` (which raises `KeyboardInterrupt` in Python), 
-`signal.SIGTERM` is used to kill the child. Note that exit handlers and 
-finally clauses, etc., are not executed after a `SIGTERM`.
-
-
-
-
-# Deployment
-
-Bottle uses the build-in `wsgiref.SimpleServer` by default. This non-threading
-HTTP server is perfectly fine for development and early production,
-but may become a performance bottleneck when server load increases.
-
-There are three ways to eliminate this bottleneck:
-
-  * Use a multi-threaded server adapter
-  * Spread the load between multiple bottle instances
-  * Do both
+La recarga depende de la capacidad de detener el proceso hijo. Si utiliza Windows
+o cualquier otro sistema operativo que no soporta `signal.SIGINT` (que es la señal
+que lanza la excepción `KeyboardInterrupt` en Python), se usará `signal.SIGTERM`
+para *matar* el proceso hijo. Téngase en cuenta que los manejadores de salida,
+cláusulas `finally`, etc., no se ejecutan tras una señal `SIGTERM`.
 
 
 
 
-## Multi-Threaded Server
+# Despliegue
 
-The easiest way to increase performance is to install a multi-threaded and
-WSGI-capable HTTP server like [Paste][paste], [flup][flup], [cherrypy][cherrypy]
-or [fapws3][fapws3] and use the corresponding bottle server-adapter.
+Bottle usa por defecto un adaptador llamado `AutoServer`, que probará por orden
+diferentes servidores en este orden: [fapws3][fapws3], [cherrypy][cherrypy],
+[Paste][paste], Twisted, Gunicorn, WSGIRef. Si no se ha instalado ninguno se
+utilizará el último, `wsgiref.SimpleServer`, que es parte de la librería estándar
+y estará siempre presente. Este servidor HTTP sin soporte para hilos es más que
+adecuado para desarrollo y producción, pero puede convertirse en un cuello de
+botella a medida que crece la cargar del servidor.
+
+Existen tres maneras de eliminar ese cuello de botella:
+
+  * Usar un adaptador de servidor multi-hilos
+  * Repartir la carga entre múltiples instancias de bottle
+  * Hacer ambas cosas
+
+
+
+
+## Servidores multi-hilo
+
+La manera más fácil de incrementar las prestaciones es instalar un servidor
+HTTP multi-hilo y compatible con WSGI, como [Paste][paste], [flup][flup],
+[cherrypy][cherrypy] o [fapws3][fapws3], y usar el adaptador de servidor
+correspondiente.
 
     #!Python
     from bottle import PasteServer, FlupServer, FapwsServer, CherryPyServer
     bottle.run(server=PasteServer) # Example
     
-If bottle is missing an adapter for your favorite server or you want to tweak
-the server settings, you may want to manually set up your HTTP server and use
-`bottle.default_app()` to access your WSGI application.
+Si no existe un adaptador en bottle para su servidor favorito o se quiere
+cambiar la configuración del servidor, se puede configurar y arrancar manualmente
+el servidor HTTP y usar `bottle.default_app()` para acceder e indicarle al servidor
+la aplicación WSGI application.
 
     #!Python
     def run_custom_paste_server(self, host, port):
@@ -500,12 +506,12 @@ the server settings, you may want to manually set up your HTTP server and use
 
 
 
-## Multiple Server Processes
+## Procesos de servidor múltiples
 
-A single Python process can only utilise one CPU at a time, even if 
-there are more CPU cores available. The trick is to balance the load 
-between multiple independent Python processes to utilise all of your 
-CPU cores.
+Un proceso Python sólo utiliza una CPU, incluso cuando
+hay múltiples *cores* de CPU disponibles. El *truco* es balancear la carga
+entre múltiples procesos Python independientes para usar todos los
+cores de la CPU.
 
 Instead of a single Bottle application server, you start one instances 
 of your server for each CPU core available using different local port 
