@@ -379,17 +379,18 @@ Ejemplo:
 
 
 
-# Key/Value Databases
+# Bases de Datos Clave/Valor
 
-<div style="color:darkred">Warning: The included key/value database is depreciated.</div> Please switch to a [real](http://code.google.com/p/redis/) [key](http://couchdb.apache.org/) [value](http://www.mongodb.org/) [database](http://docs.python.org/library/anydbm.html).
+<div style="color:darkred">Advertencia: La base de datos clave/valor incluida está deprecada.</div>
+
+Utilice por favor una [base de datos](http://code.google.com/p/redis/) [clave](http://couchdb.apache.org/)/[valor](http://www.mongodb.org/) [real](http://docs.python.org/library/anydbm.html).
 
 
 
 
-# Using WSGI and Middleware
+# Uso de WSGI y *middleware*
 
-A call to `bottle.default_app()` returns your WSGI application. After applying as many WSGI middleware modules as you like, you can tell 
-`bottle.run()` to use your wrapped application, instead of the default one.
+Una llamada a `bottle.default_app()` devuelve la aplicación WSGI asociada con Bottle. Tras aplicar tantos módulos de *middleware* como se desee, se le puede decir a Bottle `bottle.run()` para lanzar la applicación *envuelta*, en lugar de la aplicación por defecto.
 
     #!Python
     from bottle import default_app, run
@@ -400,10 +401,10 @@ A call to `bottle.default_app()` returns your WSGI application. After applying a
 
 
 
-## How default_app() works
+## Cómo funciona default_app()
 
-Bottle creates a single instance of `bottle.Bottle()` and uses it as a default for most of the modul-level decorators and the `bottle.run()` routine. 
-`bottle.default_app()` returns (or changes) this default. You may, however, create your own instances of `bottle.Bottle()`.
+Bottle crea una sóla instancia de `bottle.Bottle()` y la usa como valor por defecto para la mayoría de los decoradores definidos a nivel de módulo y la rutina `bottle.run()`. 
+`bottle.default_app()` devuelte (o cambia) ese valor por defecto. Se puede también crear nuestras propias instancias de `bottle.Bottle()`.
 
     #!Python
     from bottle import Bottle, run
@@ -416,45 +417,38 @@ Bottle creates a single instance of `bottle.Bottle()` and uses it as a default f
 
 
 
-# Development
-Bottle has two features that may be helpfull during development.
+# Desarrollo
+Bottle tiene dos características que pueden ser útiles durante la fase de desarrollo de aplicaciones web.
 
-## Debug Mode
+## Modo de depuración
 
-In debug mode, bottle is much more verbose and tries to help you finding 
-bugs. You should never use debug mode in production environments.
+En modo de depuración bottle es mucho más locuaz, e intenta ayudar a encontrar errores. Nunca se debe usar el modo de depuración en un entorno de producción.
 
     #!Python
     import bottle
     bottle.debug(True)
 
-This does the following:
+El modo de depuración hace lo siguiente:
 
-  * Exceptions will print a stacktrace
-  * Error pages will contain that stacktrace
-  * Templates will not be cached.
-
-
+  * Las excepciones imprimirán una traza de la pila en la salida estándar
+  * Las páginas de error contendrán esa traza
+  * Las plantillas no se cachean, se recargan cada vez.
 
 
-## Auto Reloading
 
-During development, you have to restart the server a lot to test your 
-recent changes. The auto reloader can do this for you. Every time you 
-edit a module file, the reloader restarts the server process and loads 
-the newest version of your code. 
+
+## Auto recarga
+
+Durante el desarrollo es necesario rearrancar el servidor con frecuencia para probar los cambios recientes. El *autorecargador* (*autoreloader*) puede hacerlo por nosotros automáticamente. Cada vez que se edite un fichero de código, el recargadaor reinicia el proceso del servidor y carga la última versión del código. 
 
     #!Python
     from bottle import run
     run(reloader=True)
 
-How it works: The main process will not start a server, but spawn a new 
-child process using the same command line agruments used to start the 
-main process. All module level code is executed at least twice! Be 
-carefull.
+Veamos cómo funciona: El proceso principal no arranca un servidor, sino que lanza un proceso hijo con los mismos argumentos de línea de comandos que se usaron para arrancar el proceso principal. Al actuar así, hay que tener cuidado: ¡Todo el código en el nivel de módulo se ejecuta al menos dos veces!.
 
-The child process will have `os.environ['BOTTLE_CHILD']` set to `true` 
-and start as a normal non-reloading app server. As soon as any of the 
+El proceso hijo tendrá definido `os.environ['BOTTLE_CHILD']` con el valor `true` 
+y comenand start as a normal non-reloading app server. As soon as any of the 
 loaded modules changes, the child process is terminated and respawned by 
 the main process. Changes in template files will not trigger a reload. 
 Please use debug mode to deactivate template caching.
