@@ -10,7 +10,7 @@
   [mako]: http://www.makotemplates.org/
   [mod_wsgi]: http://code.google.com/p/modwsgi/
   [paste]: http://pythonpaste.org/
-  [wsgi]: http://www.wsgi.org/wsgi/
+  [wsgi]: http://www.wsgi.org/wsgi/ "Web Server Gateway Interface"
 
 # Documentación de Bottle
 
@@ -128,7 +128,7 @@ Se puede lanzar (`raise`) la excepción `ValueError` en los llamables que escrib
 
 # Generación de contenido
 
-La [epecificación WSGI][wsgi] espera que la aplicación devuelva un iterable que produzca una secuencia de cadenas de bytes, y no sabe manejar ficheros, unicode, diccionarios or excepciones.
+La especificación [WSGI][wsgi] espera que la aplicación devuelva un iterable que produzca una secuencia de cadenas de bytes, y no sabe manejar ficheros, unicode, diccionarios or excepciones.
 
     #!Python
     @route('/wsgi')
