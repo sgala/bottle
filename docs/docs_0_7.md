@@ -538,26 +538,26 @@ Pronto dispondremos de ejemplos para [lighttpd](http://www.lighttpd.net/) y
 
 ## Apache mod_wsgi
 
-Instead of running your own HTTP server from within Bottle, you can 
-attach Bottle applications to an [Apache server][apache] using 
-[mod_wsgi][] and Bottles WSGI interface.
+En lugar de lanzar su propio servidor HTTP server desde Bottle, se puede 
+conectar aplicaciones Bottle a un [servidor HTTPD Apache][apache] usando 
+[mod_wsgi][] y la interfez WSGI de Bottle.
 
-All you need is an `app.wsgi` file that provides an 
-`application` object. This object is used by mod_wsgi to start your 
-application and should be a WSGI conform Python callable.
+Sólo hace falta un fichero `app.wsgi` que proporciones un objeto
+`application`. mod_wsgi usar ese objeto para lanzar su
+aplicación. El objeto debe ser un *llamable* compatible con WSGI.
 
     #!Python
-    # File: /var/www/yourapp/app.wsgi
+    # Fichero: /var/www/yourapp/app.wsgi
     
-    # Change working directory so relative paths (and template lookup) work again
+    # Cambie el directorio de trabajo de manera que los caminos relativos (y la búsqueda de plantillas) siga funcionando
     os.chdir(os.path.dirname(__file__))
     
     import bottle
-    # ... add or import your bottle app code here ...
-    # Do NOT use bottle.run() with mod_wsgi
+    # ... añada o importe su aplicación bottle aquí ...
+    # NO USE bottle.run() con mod_wsgi
     application = bottle.default_app()
 
-The Apache configuration may look like this:
+La configuración de Apache quedará parecida a esta (cambie `yourapp` y `example.com`):
 
     #!ApacheConf
     <VirtualHost *>
