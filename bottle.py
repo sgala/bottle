@@ -58,35 +58,33 @@ This is an example::
     
     run(host='localhost', port=8080)
 """
+
 from __future__ import with_statement
 __author__ = 'Marcel Hellkamp'
 __version__ = '0.7.0a'
 __license__ = 'MIT'
 
-import types
-import sys
+import base64
 import cgi
+import email.utils
+import functools
+import hmac
+import inspect
+import itertools
 import mimetypes
 import os
-import os.path
-from traceback import format_exc
 import re
-import random
+import subprocess
+import sys
+import thread
 import threading
 import time
-import warnings
-import email.utils
+
 from Cookie import SimpleCookie
-import subprocess
-import thread
 from tempfile import TemporaryFile
-import hmac
-import base64
+from traceback import format_exc
 from urllib import quote as urlquote
 from urlparse import urlunsplit, urljoin
-import functools
-import itertools
-import inspect
 
 try:
   from collections import MutableMapping as DictMixin
@@ -115,10 +113,12 @@ if sys.version_info >= (3,0,0): # pragma: no cover
     # See Request.POST
     from io import BytesIO
     from io import TextIOWrapper
+    StringType = bytes
     def touni(x, enc='utf8'): # Convert anything to unicode (py3)
         return str(x, encoding=enc) if isinstance(x, bytes) else str(x)
 else:
     from StringIO import StringIO as BytesIO
+    from types import StringType
     TextIOWrapper = None
     def touni(x, enc='utf8'): # Convert anything to unicode (py2)
         return x if isinstance(x, unicode) else unicode(str(x), encoding=enc)
@@ -155,17 +155,13 @@ class HTTPResponse(BottleException):
 
 class HTTPError(HTTPResponse):
     """ Used to generate an error page """
-    def __init__(self, code=500, message='Unknown Error', exception=None, header=None):
-        super(HTTPError, self).__init__(message, code, header)
+    def __init__(self, code=500, output='Unknown Error', exception=None, traceback=None, header=None):
+        super(HTTPError, self).__init__(output, code, header)
         self.exception = exception
+        self.traceback = traceback
 
-    def __str__(self):
-        return ERROR_PAGE_TEMPLATE % {
-            'status' : self.status,
-            'url' : str(request.path),
-            'error_name' : HTTP_CODES.get(self.status, 'Unknown').title(),
-            'error_message' : str(self.output)
-        }
+    def __repr__(self):
+        return ''.join(ERROR_PAGE_TEMPLATE.render(e=self))
 
 
 
@@ -406,10 +402,9 @@ class Bottle(object):
         return wrapper
 
     def handle(self, url, method, catchall=True):
-        """ Handle a single request. Return handler output, HTTPResponse or
-        HTTPError. If catchall is true, all exceptions thrown within a
-        handler function are catched and returned as HTTPError(500).
-        """
+        """ Execute the handler bound to the specified url and method and return
+        its output. If catchall is true, exceptions are catched and returned as
+        HTTPError(500) objects. """
         if not self.serve:
             return HTTPError(503, "Server stopped")
 
@@ -421,18 +416,13 @@ class Bottle(object):
             return handler(**args)
         except HTTPResponse, e:
             return e
-        except (KeyboardInterrupt, SystemExit, MemoryError):
-            raise
         except Exception, e:
-            if not self.catchall:
+            if isinstance(e, (KeyboardInterrupt, SystemExit, MemoryError))\
+            or not self.catchall:
                 raise
-            err = "Unhandled Exception: %s\n" % (repr(e))
-            if DEBUG:
-                err += '\n\nTraceback:\n' + format_exc(10)
-            request.environ['wsgi.errors'].write(err)
-            return HTTPError(500, err, e)
+            return HTTPError(500, 'Unhandled exception', e, format_exc(10))
 
-    def _cast(self, out):
+    def _cast(self, out, peek=None):
         """ Try to convert the parameter into something WSGI compatible and set
         correct HTTP headers when possible.
         Support: False, str, unicode, dict, HTTPResponse, HTTPError, file-like,
@@ -442,8 +432,9 @@ class Bottle(object):
         if not out:
             response.header['Content-Length'] = 0
             return []
+
         # Join lists of byte or unicode strings (TODO: benchmark this against map)
-        if isinstance(out, list) and isinstance(out[0], (types.StringType, unicode)):
+        if isinstance(out, list) and isinstance(out[0], (StringType, unicode)):
             out = out[0][0:0].join(out) # b'abc'[0:0] -> b''
         # Convert dictionaries to JSON
         if isinstance(out, dict) and self.jsondump:
@@ -453,14 +444,14 @@ class Bottle(object):
         if isinstance(out, unicode):
             out = out.encode(response.charset)
         # Byte Strings
-        if isinstance(out, types.StringType):
+        if isinstance(out, StringType):
             response.header['Content-Length'] = str(len(out))
             return [out]
 
         # HTTPError or HTTPException (recursive, because they may wrap anything)
         if isinstance(out, HTTPError):
             out.apply(response)
-            return self._cast(self.error_handler.get(out.status, str)(out))
+            return self._cast(self.error_handler.get(out.status, repr)(out))
         if isinstance(out, HTTPResponse):
             out.apply(response)
             return self._cast(out.output)
@@ -471,23 +462,29 @@ class Bottle(object):
             lambda x, y: iter(lambda: x.read(y), ''))(out, 1024*64)
         else:
             out = iter(out)
-        # We peek into iterables to detect their inner type and to support
-        # generators as callbacks. They should not try to set any headers after
-        # their first yield statement.
+        # We peek into iterables to detect their inner type.
         try:
-            while 1:
+            first = out.next()
+            while not first:
                 first = out.next()
-                if first: break
         except StopIteration:
-            response.header['Content-Length'] = 0
-            return []
+            return self._cast('')
+        except HTTPResponse, e:
+            first = e
+        except Exception, e:
+            first = HTTPError(500, 'Unhandled exception', e, format_exc(10))
+            if isinstance(e, (KeyboardInterrupt, SystemExit, MemoryError))\
+            or not self.catchall:
+                raise
 
-        if isinstance(first, types.StringType):
+        if isinstance(first, HTTPResponse):
+            return self._cast(first)
+        if isinstance(first, StringType):
             return itertools.chain([first], out)
-        elif isinstance(first, unicode):
+        if isinstance(first, unicode):
             return itertools.imap(lambda x: x.encode(response.charset),
                                   itertools.chain([first], out))
-        raise TypeError('Unsupported response type: %s' % type(first))
+        return self._cast(HTTPError(500, 'Unsupported response type: %s' % type(first)))
 
     def __call__(self, environ, start_response):
         """ The bottle WSGI-interface. """
@@ -498,11 +495,8 @@ class Bottle(object):
             out = self._cast(out)
             if response.status in (100, 101, 204, 304) or request.method == 'HEAD':
                 out = [] # rfc2616 section 4.3
-            if isinstance(out, list) and len(out) == 1:
-                response.header['Content-Length'] = str(len(out[0]))
             status = '%d %s' % (response.status, HTTP_CODES[response.status])
             start_response(status, response.wsgiheader())
-            # TODO: Yield here to catch errors in generator callbacks.
             return out
         except (KeyboardInterrupt, SystemExit, MemoryError):
             raise
@@ -940,7 +934,7 @@ def parse_auth(header):
         if method.lower() == 'basic':
             name, pwd = base64.b64decode(data).split(':', 1)
             return name, pwd
-    except (KeyError, ValueError, TypeError), a:
+    except (KeyError, ValueError, TypeError):
         return None
 
 
@@ -1001,7 +995,7 @@ def validate(**vkargs):
                     abort(403, 'Missing parameter: %s' % key)
                 try:
                     kargs[key] = value(kargs[key])
-                except ValueError, e:
+                except ValueError:
                     abort(403, 'Wrong parameter format for: %s' % key)
             return func(**kargs)
         return wrapper
@@ -1134,13 +1128,15 @@ class AppEngineServer(ServerAdapter):
 class TwistedServer(ServerAdapter):
     """ Untested. """
     def run(self, handler):
-        import twisted.web.wsgi
-        import twisted.internet
-        resource = twisted.web.wsgi.WSGIResource(twisted.internet.reactor,
-                   twisted.internet.reactor.getThreadPool(), handler)
-        site = server.Site(resource)
-        twisted.internet.reactor.listenTCP(self.port, self.host)
-        twisted.internet.reactor.run()
+        from twisted.web import server, wsgi
+        from twisted.python.threadpool import ThreadPool
+        from twisted.internet import reactor
+        thread_pool = ThreadPool()
+        thread_pool.start()
+        reactor.addSystemEventTrigger('after', 'shutdown', thread_pool.stop)
+        server.Site(wsgi.WSGIResource(reactor, thread_pool, handler))
+        reactor.listenTCP(self.port, self.host)
+        reactor.run()
 
 
 class DieselServer(ServerAdapter):
@@ -1548,20 +1544,31 @@ HTTP_CODES = {
 """ A dict of known HTTP error and status codes """
 
 
-ERROR_PAGE_TEMPLATE = """<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+
+ERROR_PAGE_TEMPLATE = SimpleTemplate("""
+%import cgi
+%from bottle import DEBUG, HTTP_CODES, request
+%status_name = HTTP_CODES.get(e.status, 'Unknown').title()
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <html>
     <head>
-        <title>Error %(status)d: %(error_name)s</title>
+        <title>Error {{e.status}}: {{status_name}}</title>
     </head>
     <body>
-        <h1>Error %(status)d: %(error_name)s</h1>
-        <p>Sorry, the requested URL <tt>%(url)s</tt> caused an error:</p>
-        <pre>
-            %(error_message)s
-        </pre>
+        <h1>Error {{e.status}}: {{status_name}}</h1>
+        <p>Sorry, the requested URL <tt>{{cgi.escape(request.url)}}</tt> caused an error:</p>
+        <pre>{{cgi.escape(str(e.output))}}</pre>
+        %if DEBUG and e.exception:
+          <h2>Exception:</h2>
+          <pre>{{cgi.escape(repr(e.exception))}}</pre>
+        %end
+        %if DEBUG and e.traceback:
+          <h2>Traceback:</h2>
+          <pre>{{cgi.escape(e.traceback)}}</pre>
+        %end
     </body>
 </html>
-"""
+""") #TODO: use {{!bla}} instead of cgi.escape as soon as strlunicode is merged
 """ The HTML template used for error messages """
 
 request = Request()
