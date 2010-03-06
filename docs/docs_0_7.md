@@ -513,24 +513,25 @@ hay múltiples *cores* de CPU disponibles. El *truco* es balancear la carga
 entre múltiples procesos Python independientes para usar todos los
 cores de la CPU.
 
-Instead of a single Bottle application server, you start one instances 
-of your server for each CPU core available using different local port 
-(localhost:8080, 8081, 8082, ...). Then a high performance load 
-balancer acts as a reverse proxy and forwards each new requests to 
-a random Bottle processes, spreading the load between all available 
-backed server instances. This way you can use all of your CPU cores and 
-even spread out the load between different physical servers.
+En vez de lanzar un solo servidor de aplicación Bottle, se arranca una instancia 
+del servidor por cada core disponible, usando diferentes puertos locales 
+(localhost:8080, 8081, 8082, ...), y se usa un balanceador de carga
+de altas prestaciones como *proxy* inverso que reenvía cada nueva petición a  
+un proceso de Bottle al azar, repartiendo la carga entre todas las 
+instancias de servidor disponibles. Así se pueden usar todas las CPUs y cores
+e incluso repartir la carga entre distintos servidores físicos.
 
-But there are a few drawbacks:
+Pero existen inconvenientes:
 
-  * You can't easily share data between multiple Python processes.
-  * It takes a lot of memory to run several copies of Python and Bottle 
-at the same time.
+  * No es fácil compartir datos entre múltiples procesos Python.
+  * Hace falta mucha memoria para ejecutar varias copias de Python y Bottle 
+a la vez.
 
-One of the fastest load balancer available is [pound](http://www.apsis.ch/pound/) but most common web servers have a proxy-module that can do the work just fine.
+Uno de los balanceadores de carga más rápidos que existen es [pound](http://www.apsis.ch/pound/). La mayor parte de los servidores web de uso común tienen un módulo *proxy* que
+puede hacer ese trabajo sin problemas.
 
-I'll add examples for [lighttpd](http://www.lighttpd.net/) and 
-[Apache](http://www.apache.org/) web servers soon.
+Pronto dispondremos de ejemplos para [lighttpd](http://www.lighttpd.net/) y
+[Apache](http://www.apache.org/).
 
 
 
@@ -578,26 +579,26 @@ The Apache configuration may look like this:
 
 ## Google AppEngine
 
-I didn't test this myself but several Bottle users reported that this 
-works just fine.
+No hemos probado personalmente esta configuración, pero varios usuarios de Bottle
+informan de que funciona bien:
 
     #!Python
     import bottle
     from google.appengine.ext.webapp import util 
-    # ... add or import your bottle app code here ...
-    # Do NOT use bottle.run() with AppEngine
+    # ... añadir o importar el código de la aplicación de bottle aquí ...
+    # NO USAR bottle.run() con AppEngine
     util.run_wsgi_app(bottle.default_app())
 
 
 
 
-## Good old CGI
+## CGI, al viejo estilo
 
-CGI is slow as hell, but it works.
+CGI es lento como el demonio pero funciona.
 
     #!Python
     import bottle
-    # ... add or import your bottle app code here ...
+    # ... añadir o importar el código de la aplicación de bottle aquí ...
     bottle.run(server=bottle.CGIServer)
 
 
