@@ -274,13 +274,13 @@ TODO: Se puede almacenar objetos python y listas en las *cookies*. Cuando se hac
 
 La cadena de petición (*query string*) y/o los datos de formularios POST se analizan y se guardan en diccionarios, disponibles como `request.GET` y `request.POST` respectivamente. Pueden aparecer valores múltiples por cada clave, así que cada valor de esos diccionarios puede contener tanto una cadena como una lista de cadenas.
 
-Se puede usar `.getone(key[, default])` para estar seguro de que devuelve un sólo valor.
+Se puede usar `.getall(key)` para recuperar todos los valores, o bien `.get(key[, default])` si queremos un sólo valor. `getall` devuelve una lista, `get` una cadena.
 
     #!Python
     from bottle import route, request
     @route('/search', method='POST')
     def do_search():
-        query = request.POST.getone('query', '').strip()
+        query = request.POST.get('query', '').strip()
         if not query:
             return "No proporcionó una variable 'query' en la petición."
         else:
