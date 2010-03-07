@@ -390,21 +390,21 @@ Utilice por favor una [base de datos](http://code.google.com/p/redis/) [clave](h
 
 # Uso de WSGI y *middleware*
 
-Una llamada a `bottle.default_app()` devuelve la aplicación WSGI asociada con Bottle. Tras aplicar tantos módulos de *middleware* como se desee, se le puede decir a Bottle `bottle.run()` para lanzar la applicación *envuelta*, en lugar de la aplicación por defecto.
+Una llamada a `bottle.app()` devuelve la aplicación WSGI asociada con Bottle. Tras aplicar tantos módulos de *middleware* como se desee, se le puede decir a Bottle `bottle.run()` para lanzar la applicación *envuelta*, en lugar de la aplicación por defecto.
 
     #!Python
-    from bottle import default_app, run
-    app = default_app()
+    from bottle import app, run
+    app = app()
     newapp = YourMiddleware(app)
     run(app=newapp)
 
 
 
 
-## Cómo funciona default_app()
+## Cómo funciona `app()` (`default_app()` en 0.6.4 y anteriores) 
 
-Bottle crea una sóla instancia de `bottle.Bottle()` y la usa como valor por defecto para la mayoría de los decoradores definidos a nivel de módulo y la rutina `bottle.run()`. 
-`bottle.default_app()` devuelte (o cambia) ese valor por defecto. Se puede también crear nuestras propias instancias de `bottle.Bottle()`.
+Bottle crea una instancia de `bottle.Bottle()` y la usa como valor por defecto para la mayoría de los decoradores definidos a nivel de módulo y la rutina `bottle.run()`.
+`bottle.app()` devuelte ese valor por defecto. Se puede también crear nuestras propias instancias de `bottle.Bottle()`.
 
     #!Python
     from bottle import Bottle, run
@@ -494,12 +494,11 @@ correspondiente.
     
 Si no existe un adaptador en bottle para su servidor favorito o se quiere
 cambiar la configuración del servidor, se puede configurar y arrancar manualmente
-el servidor HTTP y usar `bottle.default_app()` para acceder e indicarle al servidor
-la aplicación WSGI application.
+el servidor HTTP y usar `bottle.app()` para recuperar la aplicación WSGI e indicársela al servidor.
 
     #!Python
     def run_custom_paste_server(self, host, port):
-        myapp = bottle.default_app()
+        myapp = bottle.app()
         from paste import httpserver
         httpserver.serve(myapp, host=host, port=port)
 
@@ -555,7 +554,7 @@ aplicación. El objeto debe ser un *llamable* compatible con WSGI.
     import bottle
     # ... añada o importe su aplicación bottle aquí ...
     # NO USE bottle.run() con mod_wsgi
-    application = bottle.default_app()
+    application = bottle.app()
 
 La configuración de Apache quedará parecida a esta (cambie `yourapp` y `example.com`):
 
@@ -587,7 +586,7 @@ informan de que funciona bien:
     from google.appengine.ext.webapp import util 
     # ... añadir o importar el código de la aplicación de bottle aquí ...
     # NO USAR bottle.run() con AppEngine
-    util.run_wsgi_app(bottle.default_app())
+    util.run_wsgi_app(bottle.app())
 
 
 
