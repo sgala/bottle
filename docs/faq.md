@@ -1,16 +1,16 @@
 [TOC]
 
-# Frequently Asked Questions
+# Preguntas Usadas Frecuentemente
 
 [beaker]: http://beaker.groovie.org/
 
-## How to implement sessions?
+## Cómo implementar sesiones
 
-There is no build in support for sessions because there is no *right*
-way to do it. Depending on requirements and environment you could use [beaker][]
-middleware with a fitting backend or implement it yourself.
+No se incluye soporte para sesiones porque no hay una manera *buena* de
+hacerlo. Según requerimientos y entorno se podría usar el middleware [beaker][]
+con un sustrato (*backend*) adecuado, o bien implementarlas uno mismo.
 
-Here is an example for beaker sessions with a file-based backend.
+Por ejemplo, así podrían implementarse sessiones basadas en archivos con beaker.
 
     #!Python
     import bottle
@@ -36,25 +36,25 @@ Here is an example for beaker sessions with a file-based backend.
 
 
 
-## How to use a debugging middleware?
+## Cómo usar un middleware de depuración
 
-Bottle catches all Exceptions raised in your app code, so your WSGI server won't crash. If you need exceptions to propagate to a debugging middleware, you can turn off this behaviour.
+Bottle captura todas las excepciones lanzadas por el código de aplicación, de forma que el servidor WSGI no *se cuelgue*. Se puede cambiar este comportamiento si se necesita propagar las excepciones a un *middleware* de depuración.
 
     #!Python
     import bottle
-    app = bottle.default_app() # or bottle.app() since 0.7
+    app = bottle.app() # o bottle.default_app() para versiones anteriores a 0.7
     app.catchall = False
     myapp = DebuggingMiddleware(app)
     bottle.run(app=myapp)
 
-Now, bottle only catches its own exceptions (`HTTPError`, `HTTPResponse` and `BottleException`) and your middleware can handle the rest.
+Ahora bottle capturará sólo sus propias excepciones (`HTTPError`, `HTTPResponse` y `BottleException`) y su *middleware* puede manejar el resto.
 
 
 
 
-## How to call a WSGI app from within bottle
+## Cómo llamar una aplicación WSGI desde bottle
 
-This is not the recommend way (you should use a middleware in front of bottle to do this) but you can call other WSGI applications from within your bottle app and let bottle act as a pseudo-middleware. Here is an example:
+Esta no es la manera recomendada de hacerlo, ya que se debería usar un *middleware* delanta de bottle para ello, pero se puede llamar a otras aplicaciones WSGI desde su aplicación bottle, permitiendo así a bottle funcionar como un *pseudo-middleware*. Véase un ejemplo:
 
     #!Python
     from bottle import request, response, route
@@ -71,26 +71,26 @@ This is not the recommend way (you should use a middleware in front of bottle to
                 response.header.append(key, value) # or .add_header() with bottle < 0.7
       return app(new_environ, start_response)
 
-Again, this is not the recommend way to implement subprojects. It is only here because many people asked for this and to show how bottle maps to WSGI.
+De nuevo: esta **no es la manera recomendada** de implementar subproyectos. Ponemos este ejemplo aquí porque mucha gente preguntó por la manera de hacerlo, y también para mostrar cómo se enlaza bottle con WSGI.
 
-## How to ignore tailing slashes?
+## Cómo ignorar las barras inclinadas al final de la URL
 
-Bottle does not ignore tailing slashes by default. 
-To handle URLs like `/example` and `/example/` the same, 
-you could add two `@route` decorators
+Bottle no ignora  barras inclinadas ("/") al final de la URL por defecto. 
+Para hacer que URLs como `/ejemplo` and `/ejemplo/` se traten igual, 
+se puede poner dos decoradores `@route`
 
     #!Python
     @route('/test')
     @route('/test/')
     def test(): pass
 
-or use regular expressions in dynamic routes
+o usar expresiones regulares en rutas dinámicas
 
     #!Python
     @route('/test/?')
     def test(): pass
 
-or add a WSGI middleware to strips tailing '/' from URLs
+o añadir un *middleware* WSGI que elimine las barras ('/') finales de las URLs
 
     #!Python
     class StripPathMiddleware(object):
@@ -100,7 +100,7 @@ or add a WSGI middleware to strips tailing '/' from URLs
         e['PATH_INFO'] = e['PATH_INFO'].rstrip('/')
         return self.app(e,h)
     
-    app = bottle.default_app()
+    app = bottle.app()
     app = StripPathMiddleware(app)
     bottle.run(app=app)
 
@@ -109,19 +109,19 @@ or add a WSGI middleware to strips tailing '/' from URLs
 
 
 
-## mod_python and "Template Not Found"?
+## mod_python y "Template Not Found"
 
-Bottle searches in "./" and "./views/" for templates. In a mod_python
-environment, the working directory ('.') depends on your Apache settings. You
-should add an absolute path to the template search path
+Bottle busca plantillas en "./" y en "./views/". Cuando se usa mod_python el 
+directorio de trabajo ('.') depende de la configuración de Apache. Se debería
+añadir un camino absoluto al camino de búsqueda
 
     #!Python
     bottle.TEMPLATE_PATH.insert(0,'/absolut/path/to/templates/')
 
-or change the working directory
+o bien cambiar el directorio de trabajo
 
     #!Python
     os.chdir(os.path.dirname(__file__))
 
-so bottle searches the right paths.
+de forma que bottle busque en los directorios correctos.
 

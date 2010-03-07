@@ -19,7 +19,7 @@
         <li><a href="/blog">Entradas de Blog</a></li>
         <li><a href="/page/docs_0_7">Documentación</a></li>
         <li><a href="/page/tutorial">Tutorial</a></li>
-        <li><a href="/page/faq">F.A.Q.</a></li>
+        <li><a href="/page/faq">P.U.F. (F.A.Q.)</a></li>
         <li><a href="/page/contact">Contacto</a></li>
       </ul>
       <h1>Enlaces</h1>
