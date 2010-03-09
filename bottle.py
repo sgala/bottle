@@ -144,12 +144,12 @@ class HTTPResponse(BottleException):
         super(BottleException, self).__init__("HTTP Response %d" % status)
         self.status = int(status)
         self.output = output
-        self.header = HeaderDict(header) if header else None
+        self.headers = HeaderDict(header) if header else None
 
     def apply(self, response):
-        if self.header:
-            for key, value in self.header.iterallitems():
-                response.header[key] = value
+        if self.headers:
+            for key, value in self.headers.iterallitems():
+                response.headers[key] = value
         response.status = self.status
 
 
@@ -343,10 +343,21 @@ class Bottle(object):
         self.routes = Router()
         self.default_route = None
         self.error_handler = {}
-        self.jsondump = json_dumps if autojson and json_dumps else False
         self.catchall = catchall
         self.config = dict()
         self.serve = True
+        self.castfilter = []
+        if autojson and json_dumps:
+            self.add_filter(dict, dict2json)
+
+    def add_filter(self, ftype, func):
+        ''' Register a new output filter. Whenever bottle hits a handler output
+            matching `ftype`, `func` is applyed to it. '''
+        if not isinstance(ftype, type):
+            raise TypeError("Expected type object, got %s" % type(ftype))
+        self.castfilter = [(t, f) for (t, f) in self.castfilter if t != ftype]
+        self.castfilter.append((ftype, func))
+        self.castfilter.sort()
 
     def match_url(self, path, method='GET'):
         """ Find a callback bound to a path and a specific HTTP method.
@@ -430,24 +441,18 @@ class Bottle(object):
         """
         # Empty output is done here
         if not out:
-            response.header['Content-Length'] = 0
+            response.headers['Content-Length'] = 0
             return []
-
-        # Join lists of byte or unicode strings (TODO: benchmark this against map)
+        # Join lists of byte or unicode strings. Mixed lists are NOT supported
         if isinstance(out, list) and isinstance(out[0], (StringType, unicode)):
             out = out[0][0:0].join(out) # b'abc'[0:0] -> b''
-        # Convert dictionaries to JSON
-        if isinstance(out, dict) and self.jsondump:
-            response.content_type = 'application/json'
-            out = self.jsondump(out)
         # Encode unicode strings
         if isinstance(out, unicode):
             out = out.encode(response.charset)
-        # Byte Strings
+        # Byte Strings are just returned
         if isinstance(out, StringType):
-            response.header['Content-Length'] = str(len(out))
+            response.headers['Content-Length'] = str(len(out))
             return [out]
-
         # HTTPError or HTTPException (recursive, because they may wrap anything)
         if isinstance(out, HTTPError):
             out.apply(response)
@@ -456,14 +461,19 @@ class Bottle(object):
             out.apply(response)
             return self._cast(out.output)
 
-        # Handle Files and other more complex iterables here...
+        # Filtered types (recursive, because they may return anything)
+        for testtype, filterfunc in self.castfilter:
+            if isinstance(out, testtype):
+                return self._cast(filterfunc(out))
+
+        # Cast Files into iterables
         if hasattr(out, 'read') and 'wsgi.file_wrapper' in request.environ:
             out = request.environ.get('wsgi.file_wrapper',
             lambda x, y: iter(lambda: x.read(y), ''))(out, 1024*64)
-        else:
-            out = iter(out)
-        # We peek into iterables to detect their inner type.
+
+        # Handle Iterables. We peek into them to detect their inner type.
         try:
+            out = iter(out)
             first = out.next()
             while not first:
                 first = out.next()
@@ -476,7 +486,7 @@ class Bottle(object):
             if isinstance(e, (KeyboardInterrupt, SystemExit, MemoryError))\
             or not self.catchall:
                 raise
-
+        # These are the inner types allowed in iterator or generator objects.
         if isinstance(first, HTTPResponse):
             return self._cast(first)
         if isinstance(first, StringType):
@@ -484,7 +494,8 @@ class Bottle(object):
         if isinstance(first, unicode):
             return itertools.imap(lambda x: x.encode(response.charset),
                                   itertools.chain([first], out))
-        return self._cast(HTTPError(500, 'Unsupported response type: %s' % type(first)))
+        return self._cast(HTTPError(500, 'Unsupported response type: %s'\
+                                         % type(first)))
 
     def __call__(self, environ, start_response):
         """ The bottle WSGI-interface. """
@@ -496,7 +507,7 @@ class Bottle(object):
             if response.status in (100, 101, 204, 304) or request.method == 'HEAD':
                 out = [] # rfc2616 section 4.3
             status = '%d %s' % (response.status, HTTP_CODES[response.status])
-            start_response(status, response.wsgiheader())
+            start_response(status, response.headerlist)
             return out
         except (KeyboardInterrupt, SystemExit, MemoryError):
             raise
@@ -509,7 +520,7 @@ class Bottle(object):
                 err += '<h2>Error:</h2>\n<pre>%s</pre>\n' % repr(e)
                 err += '<h2>Traceback:</h2>\n<pre>%s</pre>\n' % format_exc(10)
             environ['wsgi.errors'].write(err) #TODO: wsgi.error should not get html
-            start_response('500 INTERNAL SERVER ERROR', [])
+            start_response('500 INTERNAL SERVER ERROR', [('Content-Type', 'text/html')])
             return [tob(err)]
 
 
@@ -715,7 +726,7 @@ class Response(threading.local):
         """ Resets the Response object to its factory defaults. """
         self._COOKIES = None
         self.status = 200
-        self.header = HeaderDict()
+        self.headers = HeaderDict()
         self.content_type = 'text/html; charset=UTF-8'
         self.error = None
         self.app = app
@@ -723,9 +734,11 @@ class Response(threading.local):
     def wsgiheader(self):
         ''' Returns a wsgi conform list of header/value pairs. '''
         for c in self.COOKIES.values():
-            if c.OutputString() not in self.header.getall('Set-Cookie'):
-                self.header.append('Set-Cookie', c.OutputString())
-        return list(self.header.iterallitems())
+            if c.OutputString() not in self.headers.getall('Set-Cookie'):
+                self.headers.append('Set-Cookie', c.OutputString())
+        return list(self.headers.iterallitems())
+    headerlist = property(wsgiheader)
+
 
     @property
     def charset(self):
@@ -762,10 +775,10 @@ class Response(threading.local):
 
     def get_content_type(self):
         """ Current 'Content-Type' header. """
-        return self.header['Content-Type']
+        return self.headers['Content-Type']
 
     def set_content_type(self, value):
-        self.header['Content-Type'] = value
+        self.headers['Content-Type'] = value
 
     content_type = property(get_content_type, set_content_type, None,
                             get_content_type.__doc__)
@@ -776,14 +789,6 @@ class Response(threading.local):
 
 
 # Data Structures
-
-class BaseController(object):
-    _singleton = None
-    def __new__(cls, *a, **k):
-        if not cls._singleton:
-            cls._singleton = object.__new__(cls, *a, **k)
-        return cls._singleton
-
 
 class MultiDict(DictMixin):
     """ A dict that remembers old values for each key """
@@ -818,13 +823,15 @@ class MultiDict(DictMixin):
 
 class HeaderDict(MultiDict):
     """ Same as :class:`MultiDict`, but title()s the keys and overwrites by default. """
-    def __contains__(self, key): return MultiDict.__contains__(self, key.title())
-    def __getitem__(self, key): return MultiDict.__getitem__(self, key.title())
-    def __delitem__(self, key): return MultiDict.__delitem__(self, key.title())
+    def __contains__(self, key): return MultiDict.__contains__(self, self.httpkey(key))
+    def __getitem__(self, key): return MultiDict.__getitem__(self, self.httpkey(key))
+    def __delitem__(self, key): return MultiDict.__delitem__(self, self.httpkey(key))
     def __setitem__(self, key, value): self.replace(key, value)
-    def append(self, key, value): return MultiDict.append(self, key.title(), str(value))
-    def replace(self, key, value): return MultiDict.replace(self, key.title(), str(value))
-    def getall(self, key): return MultiDict.getall(self, key.title())
+    def append(self, key, value): return MultiDict.append(self, self.httpkey(key), str(value))
+    def replace(self, key, value): return MultiDict.replace(self, self.httpkey(key), str(value))
+    def getall(self, key): return MultiDict.getall(self, self.httpkey(key))
+    def httpkey(self, key): return str(key).replace('_','-').title()
+
 
 class AppStack(list):
     """ A stack implementation. """
@@ -845,8 +852,11 @@ class AppStack(list):
 
 # Module level functions
 
-# BC: 0.6.4 and needed for run()
-app = default_app = AppStack([Bottle()])
+# Output filter
+
+def dict2json(d):
+    response.content_type = 'application/json'
+    return json_dumps(d)
 
 
 def abort(code=500, text='Unknown Error: Appliction stopped.'):
@@ -907,12 +917,21 @@ def static_file(filename, root, guessmime=True, mimetype=None, download=False):
     else:
         return HTTPResponse(open(filename, 'rb'), header=header)
 
-
+def url(routename, **kargs):
+    """ Helper generates URLs out of named routes """
+    return app().get_url(routename, **kargs)
 
 
 
 
 # Utilities
+
+def debug(mode=True):
+    """ Change the debug level.
+    There is only one debug level supported at the moment."""
+    global DEBUG
+    DEBUG = bool(mode)
+
 
 def url(routename, **kargs):
     """ Return a named route filled with arguments """
@@ -920,7 +939,7 @@ def url(routename, **kargs):
 
 
 def parse_date(ims):
-    """ Parses rfc1123, rfc850 and asctime timestamps and returns UTC epoch. """
+    """ Parse rfc1123, rfc850 and asctime timestamps and return UTC epoch. """
     try:
         ts = email.utils.parsedate_tz(ims)
         return time.mktime(ts[:8] + (0,)) - (ts[9] or 0) - time.timezone
@@ -929,6 +948,7 @@ def parse_date(ims):
 
 
 def parse_auth(header):
+    """ Parse rfc2617 HTTP authentication header string (basic) and return (user,pass) tuple or None"""
     try:
         method, data = header.split(None, 1)
         if method.lower() == 'basic':
@@ -960,6 +980,13 @@ def cookie_is_encoded(data):
     return bool(data.startswith(u'!'.encode('ascii')) and u'?'.encode('ascii') in data) #2to3 hack
 
 
+def tonativefunc(enc='utf-8'):
+    ''' Returns a function that turns everything into 'native' strings using enc '''
+    if sys.version_info >= (3,0,0):
+        return lambda x: x.decode(enc) if isinstance(x, bytes) else str(x)
+    return lambda x: x.encode(enc) if isinstance(x, unicode) else str(x)
+
+
 def yieldroutes(func):
     """ Return a generator for routes that match the signature (name, args) 
     of the func parameter. This may yield more than one route if the function
@@ -977,6 +1004,9 @@ def yieldroutes(func):
     for arg in spec[0][argc:]:
         path += '/:%s' % arg
         yield path
+
+
+
 
 
 
@@ -1334,11 +1364,11 @@ class CheetahTemplate(BaseTemplate):
 
 class Jinja2Template(BaseTemplate):
     env = None # hopefully, a Jinja environment is actually thread-safe
-
+    prefix = "#"
     def prepare(self):
         if not self.env:
             from jinja2 import Environment, FunctionLoader
-            self.env = Environment(line_statement_prefix="#", loader=FunctionLoader(self.loader))
+            self.env = Environment(line_statement_prefix=self.prefix, loader=FunctionLoader(self.loader))
         if self.source:
             self.tpl = self.env.from_string(self.source)
         else:
@@ -1355,88 +1385,124 @@ class Jinja2Template(BaseTemplate):
 
 
 class SimpleTemplate(BaseTemplate):
-    re_python = re.compile(r'^\s*%\s*(?:(if|elif|else|try|except|finally|for|'
-                            'while|with|def|class)|(include|rebase)|(end)|(.*))')
-    re_inline = re.compile(r'\{\{(.*?)\}\}')
-    dedent_keywords = ('elif', 'else', 'except', 'finally')
+    blocks = ('if','elif','else','except','finally','for','while','with','def','class')
+    dedent_blocks = ('elif', 'else', 'except', 'finally')
 
     def prepare(self):
         if self.source:
-            code = self.translate(self.source)
-            self.co = compile(code, '<string>', 'exec')
+            self.code = self.translate(self.source)
+            self.co = compile(self.code, '<string>', 'exec')
         else:
-            code = self.translate(open(self.filename).read())
-            self.co = compile(code, self.filename, 'exec')
+            self.code = self.translate(open(self.filename).read())
+            self.co = compile(self.code, self.filename, 'exec')
 
     def translate(self, template):
-        indent = 0
-        strbuffer = []
-        code = []
-        self.includes = dict()
-        class PyStmt(str):
-            def __repr__(self): return 'str(' + self + ')'
-        def flush(allow_nobreak=False):
-            if len(strbuffer):
-                if allow_nobreak and strbuffer[-1].endswith("\\\\\n"):
-                    strbuffer[-1]=strbuffer[-1][:-3]
-                code.append(' ' * indent + "_stdout.append(%s)" % repr(''.join(strbuffer)))
-                code.append((' ' * indent + '\n') * len(strbuffer)) # to preserve line numbers
-                del strbuffer[:]
-        def cadd(line): code.append(" " * indent + line.strip() + '\n')
+        stack = [] # Current Code indentation
+        lineno = 0 # Current line of code
+        ptrbuffer = [] # Buffer for printable strings and PyStmt instances
+        codebuffer = [] # Buffer for generated python code
+        touni = functools.partial(unicode, encoding=self.encoding)
+        
+        class PyStmt(object): # Python statement with filter function
+            def __init__(self, s, f='_str'): self.s, self.f = s, f
+            def __repr__(self): return '%s(%s)' % (self.f, self.s.strip())
+
+        def prt(txt): # Add a string or a PyStmt object to ptrbuffer
+            if ptrbuffer and isinstance(txt, str) \
+            and isinstance(ptrbuffer[-1], str): # Requied for line preserving
+                ptrbuffer[-1] += txt
+            else: ptrbuffer.append(txt)
+
+        def flush(): # Flush the ptrbuffer
+            if ptrbuffer:
+                # Remove escaped newline in last string
+                if isinstance(ptrbuffer[-1], unicode):
+                    if ptrbuffer[-1].rstrip('\n\r').endswith('\\\\'):
+                        ptrbuffer[-1] = ptrbuffer[-1].rstrip('\n\r')[:-2]
+                # Add linebreaks to output code, if strings contains newlines
+                out = []
+                for s in ptrbuffer:
+                    out.append(repr(s))
+                    if isinstance(s, PyStmt): s = s.s
+                    if '\n' in s: out.append('\n'*s.count('\n'))
+                codeline = ', '.join(out)
+                if codeline.endswith('\n'): codeline = codeline[:-1] #Remove last newline
+                codeline = codeline.replace('\n, ','\n')
+                codeline = "_printlist([%s])" % codeline
+                del ptrbuffer[:] # Do this before calling code() again
+                code(codeline)
+
+        def code(stmt):
+            for line in stmt.splitlines():
+                codebuffer.append('  ' * len(stack) + line.strip())
+
         for line in template.splitlines(True):
-            m = self.re_python.match(line)
-            if m:
-                flush(allow_nobreak=True)
-                keyword, subtpl, end, statement = m.groups()
-                if keyword:
-                    if keyword in self.dedent_keywords:
-                        indent -= 1
-                    cadd(line[m.start(1):])
-                    indent += 1
-                elif subtpl:
-                    tmp = line[m.end(2):].strip().split(None, 1)
-                    if not tmp:
-                      cadd("_stdout.extend(_base)")
-                    else:
-                      name = tmp[0]
-                      args = tmp[1:] and tmp[1] or ''
-                      if name not in self.includes:
-                        self.includes[name] = SimpleTemplate(name=name, lookup=self.lookup)
-                      if subtpl == 'include':
-                        cadd("_ = _includes[%s].execute(_stdout, %s)"
-                             % (repr(name), args))
-                      else:
-                        cadd("_tpl['_rebase'] = (_includes[%s], dict(%s))"
-                             % (repr(name), args))
-                elif end:
-                    indent -= 1
-                    cadd('#' + line[m.start(3):])
-                elif statement:
-                    cadd(line[m.start(4):])
-            else:
-                splits = self.re_inline.split(line) # text, (expr, text)*
-                if len(splits) == 1:
-                    strbuffer.append(line)
+            lineno += 1
+            line = unicode(line, encoding=self.encoding) if not isinstance(line, unicode) else line
+            if lineno <= 2 and 'coding' in line:
+                m = re.search(r"%.*coding[:=]\s*([-\w\.]+)", line)
+                if m: self.encoding = m.group(1)
+                if m: line = line.replace('coding','coding (removed)')
+            if line.strip().startswith('%') and not line.strip().startswith('%%'):
+                line = line.strip().lstrip('%') # Full line
+                cline = line.split('#')[0]
+                cline = cline.strip()
+                cmd = line.split()[0] # Command word
+                flush() ##encodig
+                if cmd in self.blocks:
+                    if cmd in self.dedent_blocks: cmd = stack.pop() #last block ended
+                    code(line)
+                    if cline.endswith(':'): stack.append(cmd) # false: one line blocks
+                elif cmd == 'end' and stack:
+                    code('#end(%s) %s' % (stack.pop(), line[3:]))
+                elif cmd == 'include':
+                    p = cline.split(None, 2)[1:]
+                    if len(p) == 2:
+                        code("_=_include(%s, _stdout, %s)" % (repr(p[0]), p[1]))
+                    elif p:
+                        code("_=_include(%s, _stdout)" % repr(p[0]))
+                    else: # Empty %include -> reverse of %rebase
+                        code("_printlist(_base)")
+                elif cmd == 'rebase':
+                    p = cline.split(None, 2)[1:]
+                    if len(p) == 2:
+                        code("globals()['_rebase']=(%s, dict(%s))" % (repr(p[0]), p[1]))
+                    elif p:
+                        code("globals()['_rebase']=(%s, {})" % repr(p[0]))
                 else:
-                    flush()
-                    for i in range(1, len(splits), 2):
-                        splits[i] = PyStmt(splits[i])
-                    splits = [x for x in splits if bool(x)]
-                    cadd("_stdout.extend(%s)" % repr(splits))
+                    code(line)
+            else: # Line starting with text (not '%') or '%%' (escaped)
+                if line.strip().startswith('%%'):
+                    line = line.replace('%%', '%', 1)
+                for i, part in enumerate(re.split(r'\{\{(.*?)\}\}', line)):
+                    if part and i%2:
+                        if part.startswith('!'):
+                            prt(PyStmt(part[1:], f='_str'))
+                        else:
+                            prt(PyStmt(part, f='_escape'))
+                    elif part:
+                        prt(part)
         flush()
-        return ''.join(code)
+        return '\n'.join(codebuffer) + '\n'
+
+    def subtemplate(self, name, stdout, **args):
+        return self.__class__(name=name, lookup=self.lookup).execute(stdout, **args)
 
     def execute(self, stdout, **args):
-        args['_stdout'] = stdout
-        args['_includes'] = self.includes
-        args['_tpl'] = args
-        eval(self.co, args)
-        if '_rebase' in args:
-            subtpl, args = args['_rebase']
-            args['_base'] = stdout[:] #copy stdout
+        enc = self.encoding
+        def _str(x): return touni(x, enc)
+        def _escape(x): return cgi.escape(touni(x, enc))
+        env = {'_stdout': stdout, '_printlist': stdout.extend,
+               '_include': self.subtemplate, '_str': _str, '_escape': _escape}
+        env.update(args)
+        eval(self.co, env)
+        if '_rebase' in env:
+            subtpl, rargs = env['_rebase']
+            subtpl = self.__class__(name=subtpl, lookup=self.lookup)
+            rargs['_base'] = stdout[:] #copy stdout
             del stdout[:] # clear stdout
-            return subtpl.execute(stdout, **args)
-        return args
+            return subtpl.execute(stdout, **rargs)
+        return env
 
     def render(self, **args):
         """ Render the template using keyword arguments as local variables. """
@@ -1571,6 +1637,9 @@ ERROR_PAGE_TEMPLATE = SimpleTemplate("""
 """) #TODO: use {{!bla}} instead of cgi.escape as soon as strlunicode is merged
 """ The HTML template used for error messages """
 
+TRACEBACK_TEMPLATE = '<h2>Error:</h2>\n<pre>%s</pre>\n' \
+                     '<h2>Traceback:</h2>\n<pre>%s</pre>\n'
+
 request = Request()
 """ Whenever a page is requested, the :class:`Bottle` WSGI handler stores
 metadata about the current request into this instance of :class:`Request`.
@@ -1581,11 +1650,10 @@ response = Response()
 of :class:`Response` to generate the WSGI response. """
 
 local = threading.local()
+""" Thread-local namespace. Not used by Bottle, but could get handy """
 
-#TODO: Global and app local configuration (debug, defaults, ...) is a mess
+# Initialize app stack (create first empty Bottle app)
+# BC: 0.6.4 and needed for run()
+app = default_app = AppStack()
+app.push()
 
-def debug(mode=True):
-    """ Change the debug level.
-    There is only one debug level supported at the moment."""
-    global DEBUG
-    DEBUG = bool(mode)
