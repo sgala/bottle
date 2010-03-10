@@ -90,11 +90,11 @@ Bottle hace fácil cambiar a otros *motores* de plantilla. Se soportan [mako][],
 Se pueden usar funciones auxiliares para facilitar tareas habituales:
 
     #!Python
-    from bottle import send_file, redirect, abort
+    from bottle import static_file, redirect, abort
     
     @route('/static/:filename')
-    def static_file(filename):
-        send_file(filename, root='/path/to/static/files') # send static file
+    def serve_file(filename):
+        return static_file(filename, root='/path/to/static/files') # send static file
 
     @route('/wrong/url')
     def wrong():
