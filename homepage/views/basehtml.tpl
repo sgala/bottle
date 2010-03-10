@@ -25,7 +25,7 @@
       <h1>Enlaces</h1>
       <ul>
         <li><a target="_blank" href="http://pypi.python.org/pypi/bottle">Descargar</a></li>
-        <li><a target="_blank" href="http://github.com/defnull/bottle">Repositorio en GitHub</a></li>
+        <li><a target="_blank" href="http://github.com/sgala/bottle/tree/laboratorio-servicios-web">Repositorio en GitHub</a></li>
         <li><a target="_blank" href="http://github.com/defnull/bottle/issues">Informes de Error</a></li>
         <li><a target="_blank" href="http://groups.google.de/group/bottlepy">Grupo en Google Groups</a></li>
         <li><a target="_blank" href="http://twitter.com/bottlepy">Twitter</a></li>
