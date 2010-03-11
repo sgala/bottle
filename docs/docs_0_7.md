@@ -140,7 +140,10 @@ Los ejemplos siguientes funcionarán con Bottle, pero fallarán si usamos una he
 
 ## Cadenas y Unicode
 
-Devolver cadenas (de bytes) no es un problema. Si usamos unicode, en cambio, necesitamos codificarlo en una cadena de bytes antes de que el servidor web pueda enviarlo a los clientes. La codificación por defecto es __utf-8__. Si eso no supone un problema, se puede simplemente devolver cadenas unicode, o bien iterables que produzcan unicode, o cadenas unicode.
+Devolver cadenas (de bytes) no es un problema. Si usamos unicode, en cambio, necesitamos
+codificarlo en una cadena de bytes antes de que el servidor web pueda enviarlo a los
+clientes. La codificación por defecto es __utf-8__. Si eso no supone un problema, se
+puede simplemente devolver cadenas unicode, o bien iterables que produzcan unicode, o cadenas unicode.
 
     #!Python
     @route('/string')
@@ -403,8 +406,10 @@ Una llamada a `bottle.app()` devuelve la aplicación WSGI asociada con Bottle. T
 
 ## Cómo funciona `app()` (`default_app()` en 0.6.4 y anteriores) 
 
-Bottle crea una instancia de `bottle.Bottle()` y la usa como valor por defecto para la mayoría de los decoradores definidos a nivel de módulo y la rutina `bottle.run()`.
-`bottle.app()` devuelte ese valor por defecto. Se puede también crear nuestras propias instancias de `bottle.Bottle()`.
+Bottle crea una instancia de `bottle.Bottle()` y la usa como valor por defecto para la
+mayoría de los decoradores definidos a nivel de módulo y la rutina `bottle.run()`.
+`bottle.app()` devuelte ese valor por defecto. Se puede también crear nuestras propias
+instancias de `bottle.Bottle()`.
 
     #!Python
     from bottle import Bottle, run
@@ -445,7 +450,10 @@ Durante el desarrollo es necesario rearrancar el servidor con frecuencia para pr
     from bottle import run
     run(reloader=True)
 
-Veamos cómo funciona: El proceso principal no arranca un servidor, sino que lanza un proceso hijo con los mismos argumentos de línea de comandos que se usaron para arrancar el proceso principal. Al actuar así, hay que tener cuidado: ¡Todo el código en el nivel de módulo se ejecuta al menos dos veces!.
+Veamos cómo funciona: El proceso principal no arranca un servidor, sino que lanza un 
+proceso hijo con los mismos argumentos de línea de comandos que se usaron para arrancar 
+el proceso principal. Al actuar así, hay que tener cuidado: ¡Todo el código en el nivel 
+de módulo se ejecuta al menos dos veces!.
 
 El proceso hijo tendrá definido `os.environ['BOTTLE_CHILD']` con el valor `true`
 y comenzará como un servidor de aplicaciones normal, sin auto recarga. Tan pronto como 
