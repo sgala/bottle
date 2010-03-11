@@ -15,16 +15,16 @@
     <div id="navigation">
       <h1>Navegación</h1>
       <ul>
-        <li><a href="/">Origen</a></li>
+        <li><a href="/">Inicio</a></li>
         <li><a href="/blog">Entradas de Blog</a></li>
         <li><a href="/page/docs_0_7">Documentación</a></li>
-        <li><a href="/page/tutorial">Tutorial</a></li>
+        <li><a href="/page/tutorial">Guía de uso</a></li>
         <li><a href="/page/faq">P.U.F. (F.A.Q.)</a></li>
         <li><a href="/page/contact">Contacto</a></li>
       </ul>
       <h1>Enlaces</h1>
       <ul>
-        <li><a target="_blank" href="http://pypi.python.org/pypi/bottle">Descargar</a></li>
+        <li><a target="_blank" href="http://github.com/sgala/bottle/tarball/laboratorio-servicios-web">Descargar</a></li>
         <li><a target="_blank" href="http://github.com/sgala/bottle/tree/laboratorio-servicios-web">Repositorio en GitHub</a></li>
         <li><a target="_blank" href="http://github.com/defnull/bottle/issues">Informes de Error</a></li>
         <li><a target="_blank" href="http://groups.google.de/group/bottlepy">Grupo en Google Groups</a></li>
