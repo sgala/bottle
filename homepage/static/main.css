@@ -124,15 +124,15 @@ div.toc {
   line-height: 1.4em;
 }
 
-div.toc ul {
+div.toc ul ul {
   margin: 0 0 0 1em;
 }
 
-div.toc ul ul {
+div.toc ul ul ul {
   font-size: 0.8em;
 }
 
-div.toc ul ul ul {
+div.toc ul ul ul ul {
   display: none;
 }
 
