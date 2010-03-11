@@ -61,7 +61,7 @@ This is an example::
 
 from __future__ import with_statement
 __author__ = 'Marcel Hellkamp'
-__version__ = '0.7.0a'
+__version__ = '0.8.0'
 __license__ = 'MIT'
 
 import base64
@@ -87,9 +87,9 @@ from urllib import quote as urlquote
 from urlparse import urlunsplit, urljoin
 
 try:
-  from collections import MutableMapping as DictMixin
+    from collections import MutableMapping as DictMixin
 except ImportError: # pragma: no cover
-  from UserDict import DictMixin
+    from UserDict import DictMixin
 
 try:
     from urlparse import parse_qs
@@ -341,7 +341,7 @@ class Bottle(object):
             You usually don't do that. Use `bottle.app.push()` instead.
         """
         self.routes = Router()
-        self.default_route = None
+        self.mounts = {}
         self.error_handler = {}
         self.catchall = catchall
         self.config = dict()
@@ -349,6 +349,23 @@ class Bottle(object):
         self.castfilter = []
         if autojson and json_dumps:
             self.add_filter(dict, dict2json)
+
+    def mount(self, app, script_path):
+        ''' Mount a Bottle application to a specific URL prefix '''
+        if not isinstance(app, Bottle):
+            raise TypeError('Only Bottle instances are supported for now.')
+        script_path = '/'.join(filter(None, script_path.split('/')))
+        path_depth = script_path.count('/') + 1
+        if not script_path:
+            raise TypeError('Empty script_path. Perhaps you want a merge()?')
+        for other in self.mounts:
+            if other.startswith(script_path):
+                raise TypeError('Conflict with existing mount: %s' % other)
+        @self.route('/%s/:#.*#' % script_path, method="ANY")
+        def mountpoint():
+            request.path_shift(path_depth)
+            return app.handle(request.path, request.method)
+        self.mounts[script_path] = app
 
     def add_filter(self, ftype, func):
         ''' Register a new output filter. Whenever bottle hits a handler output
@@ -372,7 +389,7 @@ class Bottle(object):
             if handler: return handler, param
         handler, param = self.routes.match('ANY;' + path)
         if handler: return handler, param
-        return self.default_route, {}
+        return None, {}
 
     def get_url(self, routename, **kargs):
         """ Return a string that matches a named route """
@@ -381,28 +398,24 @@ class Bottle(object):
     def route(self, path=None, method='GET', **kargs):
         """ Decorator: Bind a function to a GET request path.
 
-            If the path parameter is None, the signature (name, args) of the
-            decorated function is used to generate the path. See yieldroutes()
+            If the path parameter is None, the signature of the decorated
+            function is used to generate the path. See yieldroutes()
             for details.
 
             The method parameter (default: GET) specifies the HTTP request
-            method to listen to. 
+            method to listen to. You can specify a list of methods. 
         """
-        method = method.upper()
-        def wrapper(handler):
+        if isinstance(method, str): #TODO: Test this
+            method = method.split(';')
+        def wrapper(callback):
             paths = [] if path is None else [path.strip().lstrip('/')]
             if not paths: # Lets generate the path automatically 
-                paths = yieldroutes(handler)
+                paths = yieldroutes(callback)
             for p in paths:
-                self.routes.add(method+';'+p, handler, **kargs)
-            return handler
-        return wrapper
-
-    def default(self):
-        """ Decorator: Add a default handler for undefined routes """
-        def wrapper(handler):
-            self.default_route = handler
-            return handler
+                for m in method:
+                    route = m.upper() + ';' + p
+                    self.routes.add(route, callback, **kargs)
+            return callback
         return wrapper
 
     def error(self, code=500):
@@ -421,7 +434,7 @@ class Bottle(object):
 
         handler, args = self.match_url(request.path, request.method)
         if not handler:
-            return HTTPError(404, "Not found")
+            return HTTPError(404, "Not found:" + request.path)
 
         try:
             return handler(**args)
@@ -554,10 +567,32 @@ class Request(threading.local, DictMixin):
         self.environ = environ
         self.app = app
         # These attributes are used anyway, so it is ok to compute them here
-        self.path = environ.get('PATH_INFO', '/')
-        if not self.path.startswith('/'):
-            self.path = '/' + self.path
+        self.path = '/' + environ.get('PATH_INFO', '/').lstrip('/')
         self.method = environ.get('REQUEST_METHOD', 'GET').upper()
+
+    def path_shift(self, count=1):
+        ''' Shift some levels of PATH_INFO into SCRIPT_NAME and return the
+            moved part. count defaults to 1'''
+        #/a/b/  /c/d  --> 'a','b'  'c','d'
+        pathlist = self.path.strip('/').split('/')
+        scriptlist = self.environ.get('SCRIPT_NAME','/').strip('/').split('/')
+        if pathlist and pathlist[0] == '': pathlist = []
+        if scriptlist and scriptlist[0] == '': scriptlist = []
+        if count > 0 and count <= len(pathlist):
+            moved = pathlist[:count]
+            scriptlist = scriptlist + moved
+            pathlist = pathlist[count:]
+        elif count < 0 and count >= -len(scriptlist):
+            moved = scriptlist[count:]
+            pathlist = moved + pathlist
+            scriptlist = scriptlist[:count]
+        else:
+            empty = 'SCRIPT_NAME' if count < 0 else 'PATH_INFO'
+            raise AssertionError("Cannot shift. Nothing left from %s" % empty)
+        self['PATH_INFO'] = self.path =  '/' + '/'.join(pathlist) \
+                          + ('/' if self.path.endswith('/') and pathlist else '')
+        self['SCRIPT_NAME'] = '/' + '/'.join(scriptlist)
+        return '/'.join(moved)
 
     def __getitem__(self, key):
         """ Shortcut for Request.environ.__getitem__ """
@@ -739,7 +774,6 @@ class Response(threading.local):
         return list(self.headers.iterallitems())
     headerlist = property(wsgiheader)
 
-
     @property
     def charset(self):
         """ Return the charset specified in the content-type header.
@@ -918,11 +952,12 @@ def static_file(filename, root, guessmime=True, mimetype=None, download=False):
         return HTTPResponse(open(filename, 'rb'), header=header)
 
 def url(routename, **kargs):
-    """ Helper generates URLs out of named routes """
     return app().get_url(routename, **kargs)
+url.__doc__ = Bottle.get_url.__doc__
 
-
-
+def mount(app, script_path):
+    return app().mount(app, script_path)
+mount.__doc__ = Bottle.mount.__doc__
 
 # Utilities
 
@@ -931,11 +966,6 @@ def debug(mode=True):
     There is only one debug level supported at the moment."""
     global DEBUG
     DEBUG = bool(mode)
-
-
-def url(routename, **kargs):
-    """ Return a named route filled with arguments """
-    return app().get_url(routename, **kargs)
 
 
 def parse_date(ims):
@@ -1051,11 +1081,7 @@ delete = functools.partial(route, method='DELETE')
 delete.__doc__ = route.__doc__.replace('GET','DELETE')
 
 def default():
-    """
-    Decorator for request handler. Same as app().default(handler).
-    """
-    return app().default()
-
+    raise DeprecationWarning("Use @error(404) instead.")
 
 def error(code=500):
     """
@@ -1272,27 +1298,34 @@ class TemplateError(HTTPError):
 class BaseTemplate(object):
     """ Base class and minimal API for template adapters """
     extentions = ['tpl','html','thtml','stpl']
+    settings = {} #used in prepare()
+    defaults = {} #used in render()
 
-    def __init__(self, source=None, name=None, lookup=[], encoding='utf8'):
+    def __init__(self, source=None, name=None, lookup=[], encoding='utf8', settings={}):
         """ Create a new template.
         If the source parameter (str or buffer) is missing, the name argument
         is used to guess a template filename. Subclasses can assume that
-        either self.source or self.filename is set. Both are strings.
-        The lookup-argument works similar to sys.path for templates.
-        The encoding parameter is used to decode byte strings or files.
+        self.source and/or self.filename are set. Both are strings.
+        The lookup, encoding and settings parameters are stored as instance
+        variables.
+        The lookup parameter stores a list containing directory paths.
+        The encoding parameter should be used to decode byte strings or files.
+        The settings parameter contains a dict for engine-specific settings.
         """
         self.name = name
         self.source = source.read() if hasattr(source, 'read') else source
-        self.filename = None
+        self.filename = source.filename if hasattr(source, 'filename') else None
         self.lookup = map(os.path.abspath, lookup)
         self.encoding = encoding
+        self.settings = self.settings.copy() # Copy from class variable
+        self.settings.update(settings) # Apply 
         if not self.source and self.name:
             self.filename = self.search(self.name, self.lookup)
             if not self.filename:
                 raise TemplateError('Template %s not found.' % repr(name))
         if not self.source and not self.filename:
             raise TemplateError('No template specified.')
-        self.prepare()
+        self.prepare(**self.settings)
 
     @classmethod
     def search(cls, name, lookup=[]):
@@ -1307,9 +1340,18 @@ class BaseTemplate(object):
                 if os.path.isfile('%s.%s' % (fname, ext)):
                     return '%s.%s' % (fname, ext)
 
-    def prepare(self):
+    @classmethod
+    def global_config(cls, key, *args):
+        ''' This reads or sets the global settings stored in class.settings. '''
+        if args:
+            cls.settings[key] = args[0]
+        else:
+            return cls.settings[key]
+
+    def prepare(self, **options):
         """ Run preparatios (parsing, caching, ...).
-        It should be possible to call this again to refresh a template.
+        It should be possible to call this again to refresh a template or to
+        update settings.
         """
         raise NotImplementedError
 
@@ -1322,14 +1364,11 @@ class BaseTemplate(object):
 
 
 class MakoTemplate(BaseTemplate):
-    default_filters=None
-    global_variables={}
-
-    def prepare(self):
+    def prepare(self, **options):
         from mako.template import Template
         from mako.lookup import TemplateLookup
+        options.update({'input_encoding':self.encoding})
         #TODO: This is a hack... http://github.com/defnull/bottle/issues#issue/8
-        options = dict(input_encoding=self.encoding, default_filters=MakoTemplate.default_filters)
         mylookup = TemplateLookup(directories=['.']+self.lookup, **options)
         if self.source:
             self.tpl = Template(self.source, lookup=mylookup)
@@ -1340,22 +1379,24 @@ class MakoTemplate(BaseTemplate):
             self.tpl = mylookup.get_template(name)
 
     def render(self, **args):
-        _defaults = MakoTemplate.global_variables.copy()
+        _defaults = self.defaults.copy()
         _defaults.update(args)
         return self.tpl.render(**_defaults)
 
 
 class CheetahTemplate(BaseTemplate):
-    def prepare(self):
+    def prepare(self, **options):
         from Cheetah.Template import Template
         self.context = threading.local()
         self.context.vars = {}
+        options['searchList'] = [self.context.vars]
         if self.source:
-            self.tpl = Template(source=self.source, searchList=[self.context.vars])
+            self.tpl = Template(source=self.source, **options)
         else:
-            self.tpl = Template(file=self.filename, searchList=[self.context.vars])
+            self.tpl = Template(file=self.filename, **options)
 
     def render(self, **args):
+        self.context.vars.update(self.defaults)
         self.context.vars.update(args)
         out = str(self.tpl)
         self.context.vars.clear()
@@ -1363,19 +1404,21 @@ class CheetahTemplate(BaseTemplate):
 
 
 class Jinja2Template(BaseTemplate):
-    env = None # hopefully, a Jinja environment is actually thread-safe
-    prefix = "#"
-    def prepare(self):
-        if not self.env:
-            from jinja2 import Environment, FunctionLoader
-            self.env = Environment(line_statement_prefix=self.prefix, loader=FunctionLoader(self.loader))
+    def prepare(self, prefix='#', filters=None, tests=None):
+        from jinja2 import Environment, FunctionLoader
+        self.env = Environment(line_statement_prefix=prefix,
+                               loader=FunctionLoader(self.loader))
+        if filters: self.env.filters.update(filters)
+        if tests: self.env.tests.update(tests)
         if self.source:
             self.tpl = self.env.from_string(self.source)
         else:
             self.tpl = self.env.get_template(self.filename)
 
     def render(self, **args):
-        return self.tpl.render(**args).encode("utf-8")
+        _defaults = self.defaults.copy()
+        _defaults.update(args)
+        return self.tpl.render(**_defaults).encode("utf-8")
 
     def loader(self, name):
         fname = self.search(name, self.lookup)
@@ -1388,49 +1431,50 @@ class SimpleTemplate(BaseTemplate):
     blocks = ('if','elif','else','except','finally','for','while','with','def','class')
     dedent_blocks = ('elif', 'else', 'except', 'finally')
 
-    def prepare(self):
+    def prepare(self, escape_func=cgi.escape, noescape=False):
+        self.cache = {}
         if self.source:
             self.code = self.translate(self.source)
             self.co = compile(self.code, '<string>', 'exec')
         else:
             self.code = self.translate(open(self.filename).read())
             self.co = compile(self.code, self.filename, 'exec')
+        enc = self.encoding
+        self._str = lambda x: touni(x, enc)
+        self._escape = lambda x: escape_func(touni(x, enc))
+        if noescape:
+            self._str, self._escape = self._escape, self._str
 
     def translate(self, template):
         stack = [] # Current Code indentation
         lineno = 0 # Current line of code
-        ptrbuffer = [] # Buffer for printable strings and PyStmt instances
+        ptrbuffer = [] # Buffer for printable strings and token tuple instances
         codebuffer = [] # Buffer for generated python code
         touni = functools.partial(unicode, encoding=self.encoding)
-        
-        class PyStmt(object): # Python statement with filter function
-            def __init__(self, s, f='_str'): self.s, self.f = s, f
-            def __repr__(self): return '%s(%s)' % (self.f, self.s.strip())
 
-        def prt(txt): # Add a string or a PyStmt object to ptrbuffer
-            if ptrbuffer and isinstance(txt, str) \
-            and isinstance(ptrbuffer[-1], str): # Requied for line preserving
-                ptrbuffer[-1] += txt
-            else: ptrbuffer.append(txt)
+        def tokenize(line):
+            for i, part in enumerate(re.split(r'\{\{(.*?)\}\}', line)):
+                if i % 2:
+                    if part.startswith('!'): yield 'RAW', part[1:]
+                    else: yield 'CMD', part
+                else: yield 'TXT', part
 
         def flush(): # Flush the ptrbuffer
-            if ptrbuffer:
-                # Remove escaped newline in last string
-                if isinstance(ptrbuffer[-1], unicode):
-                    if ptrbuffer[-1].rstrip('\n\r').endswith('\\\\'):
-                        ptrbuffer[-1] = ptrbuffer[-1].rstrip('\n\r')[:-2]
-                # Add linebreaks to output code, if strings contains newlines
-                out = []
-                for s in ptrbuffer:
-                    out.append(repr(s))
-                    if isinstance(s, PyStmt): s = s.s
-                    if '\n' in s: out.append('\n'*s.count('\n'))
-                codeline = ', '.join(out)
-                if codeline.endswith('\n'): codeline = codeline[:-1] #Remove last newline
-                codeline = codeline.replace('\n, ','\n')
-                codeline = "_printlist([%s])" % codeline
-                del ptrbuffer[:] # Do this before calling code() again
-                code(codeline)
+            if not ptrbuffer: return
+            cline = ''
+            for line in ptrbuffer:
+                for token, value in line:
+                    if token == 'TXT': cline += repr(value)
+                    elif token == 'RAW': cline += '_str(%s)' % value
+                    elif token == 'CMD': cline += '_escape(%s)' % value
+                    cline +=  ', '
+                cline = cline[:-2] + '\\\n'
+            cline = cline[:-2]
+            if cline[:-1].endswith('\\\\\\\\\\n'):
+                cline = cline[:-7] + cline[-1] # 'nobr\\\\\n' --> 'nobr'
+            cline = '_printlist((' + cline + '))'
+            del ptrbuffer[:] # Do this before calling code() again
+            code(cline)
 
         def code(stmt):
             for line in stmt.splitlines():
@@ -1438,23 +1482,23 @@ class SimpleTemplate(BaseTemplate):
 
         for line in template.splitlines(True):
             lineno += 1
-            line = unicode(line, encoding=self.encoding) if not isinstance(line, unicode) else line
-            if lineno <= 2 and 'coding' in line:
+            line = line if isinstance(line, unicode)\
+                        else unicode(line, encoding=self.encoding)
+            if lineno <= 2:
                 m = re.search(r"%.*coding[:=]\s*([-\w\.]+)", line)
                 if m: self.encoding = m.group(1)
                 if m: line = line.replace('coding','coding (removed)')
-            if line.strip().startswith('%') and not line.strip().startswith('%%'):
-                line = line.strip().lstrip('%') # Full line
-                cline = line.split('#')[0]
-                cline = cline.strip()
-                cmd = line.split()[0] # Command word
+            if line.strip()[:2].count('%') == 1:
+                line = line.split('%',1)[1] # Full line
+                cline = line.split('#')[0].strip() # Line without commends
+                cmd = line.split()[0] if line.split() else '' # Command word
                 flush() ##encodig
                 if cmd in self.blocks:
-                    if cmd in self.dedent_blocks: cmd = stack.pop() #last block ended
+                    if cmd in self.dedent_blocks: cmd = stack.pop()
                     code(line)
-                    if cline.endswith(':'): stack.append(cmd) # false: one line blocks
+                    if cline.endswith(':'): stack.append(cmd)
                 elif cmd == 'end' and stack:
-                    code('#end(%s) %s' % (stack.pop(), line[3:]))
+                    code('#end(%s) %s' % (stack.pop(), line.strip()[3:]))
                 elif cmd == 'include':
                     p = cline.split(None, 2)[1:]
                     if len(p) == 2:
@@ -1474,34 +1518,28 @@ class SimpleTemplate(BaseTemplate):
             else: # Line starting with text (not '%') or '%%' (escaped)
                 if line.strip().startswith('%%'):
                     line = line.replace('%%', '%', 1)
-                for i, part in enumerate(re.split(r'\{\{(.*?)\}\}', line)):
-                    if part and i%2:
-                        if part.startswith('!'):
-                            prt(PyStmt(part[1:], f='_str'))
-                        else:
-                            prt(PyStmt(part, f='_escape'))
-                    elif part:
-                        prt(part)
+                ptrbuffer.append(tokenize(line))
         flush()
         return '\n'.join(codebuffer) + '\n'
 
     def subtemplate(self, name, stdout, **args):
-        return self.__class__(name=name, lookup=self.lookup).execute(stdout, **args)
+        if name not in self.cache:
+            self.cache[name] = self.__class__(name=name, lookup=self.lookup)
+        return self.cache[name].execute(stdout, **args)
 
-    def execute(self, stdout, **args):
-        enc = self.encoding
-        def _str(x): return touni(x, enc)
-        def _escape(x): return cgi.escape(touni(x, enc))
-        env = {'_stdout': stdout, '_printlist': stdout.extend,
-               '_include': self.subtemplate, '_str': _str, '_escape': _escape}
+    def execute(self, _stdout, **args):
+        env = self.defaults.copy()
+        env.update({'_stdout': _stdout, '_printlist': _stdout.extend,
+               '_include': self.subtemplate, '_str': self._str,
+               '_escape': self._escape})
         env.update(args)
         eval(self.co, env)
         if '_rebase' in env:
             subtpl, rargs = env['_rebase']
             subtpl = self.__class__(name=subtpl, lookup=self.lookup)
-            rargs['_base'] = stdout[:] #copy stdout
-            del stdout[:] # clear stdout
-            return subtpl.execute(stdout, **rargs)
+            rargs['_base'] = _stdout[:] #copy stdout
+            del _stdout[:] # clear stdout
+            return subtpl.execute(_stdout, **rargs)
         return env
 
     def render(self, **args):
@@ -1511,23 +1549,27 @@ class SimpleTemplate(BaseTemplate):
         return stdout
 
 
-def template(tpl, template_adapter=SimpleTemplate, **args):
+def template(tpl, template_adapter=SimpleTemplate, **kwargs):
     '''
     Get a rendered template as a string iterator.
     You can use a name, a filename or a template string as first parameter.
     '''
-    lookup = args.get('template_lookup', TEMPLATE_PATH)
     if tpl not in TEMPLATES or DEBUG:
-        if "\n" in tpl or "{" in tpl or "%" in tpl or '$' in tpl:
-            TEMPLATES[tpl] = template_adapter(source=tpl, lookup=lookup)
+        settings = kwargs.get('template_settings',{})
+        lookup = kwargs.get('template_lookup', TEMPLATE_PATH)
+        if isinstance(tpl, template_adapter):
+            TEMPLATES[tpl] = tpl
+            if settings: TEMPLATES[tpl].prepare(settings)
+        elif "\n" in tpl or "{" in tpl or "%" in tpl or '$' in tpl:
+            TEMPLATES[tpl] = template_adapter(source=tpl, lookup=lookup, settings=settings)
         else:
-            TEMPLATES[tpl] = template_adapter(name=tpl, lookup=lookup)
+            TEMPLATES[tpl] = template_adapter(name=tpl, lookup=lookup, settings=settings)
     if not TEMPLATES[tpl]:
         abort(500, 'Template (%s) not found' % tpl)
-    args['abort'] = abort
-    args['request'] = request
-    args['response'] = response
-    return TEMPLATES[tpl].render(**args)
+    kwargs['abort'] = abort
+    kwargs['request'] = request
+    kwargs['response'] = response
+    return TEMPLATES[tpl].render(**kwargs)
 
 mako_template = functools.partial(template, template_adapter=MakoTemplate)
 cheetah_template = functools.partial(template, template_adapter=CheetahTemplate)
@@ -1539,10 +1581,10 @@ def view(tpl_name, **defaults):
     '''
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, **kargs):
-            tplvars = dict(defaults)
-            result = func(*args, **kargs)
+        def wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
             if isinstance(result, dict):
+                tplvars = defaults.copy()
                 tplvars.update(result)
                 return template(tpl_name, **tplvars)
             return result
@@ -1656,4 +1698,3 @@ local = threading.local()
 # BC: 0.6.4 and needed for run()
 app = default_app = AppStack()
 app.push()
-
