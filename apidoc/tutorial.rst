@@ -19,7 +19,7 @@ Tutorial
 
 .. note::
 
-    This is a popy&paste from the old docs and a work in progress. Handle with care :) If you have questions not answered here, please check the :doc:`faq` or file a ticket at bottles issue_tracker_.
+    This is a copy&paste from the old docs and a work in progress. Handle with care :) If you have questions not answered here, please check the :doc:`faq` or file a ticket at bottles issue_tracker_.
 
 
 "Hello World" in a Bottle
