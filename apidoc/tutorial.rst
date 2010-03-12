@@ -91,7 +91,7 @@ As you can see, URLs and routes have nothing to do with actual files on the web 
 
 .. rubric:: HTTP Request Methods
 
-  The :func:`route` decorator has an optional keyword argument called ``method`` which defaults to ``method='GET'``; only GET requests get answered by that routes. Possible values are `POST`, `PUT`, `DELETE`, `HEAD` or any other [HTTP request method][http_method] you want to listen to. As an alternative, you can use the :func:`get()`, :func:`post()`, :func:`put()` and :func:`delete()` aliases.
+The :func:`route` decorator has an optional keyword argument called ``method`` which defaults to ``method='GET'``; only GET requests get answered by that routes. Possible values are `POST`, `PUT`, `DELETE`, `HEAD` or any other [HTTP request method][http_method] you want to listen to. As an alternative, you can use the :func:`get()`, :func:`post()`, :func:`put()` and :func:`delete()` aliases.
 
 The special ``ANY`` method works as a low priority fallback. It matches requests regardless of their HTTP method but only if no other more specific route can handle that same request.
 
