@@ -1,6 +1,6 @@
 [TOC]
 
-# Preguntas Usadas Frecuentemente
+# Preguntas de Uso Frecuente
 
 [beaker]: http://beaker.groovie.org/
 
