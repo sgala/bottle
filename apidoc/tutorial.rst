@@ -1,15 +1,18 @@
 .. module:: bottle
 
-.. _apache: http://www.apache.org/
+.. _Apache Server:
+.. _Apache: http://www.apache.org/
 .. _cherrypy: http://www.cherrypy.org/
 .. _decorator: http://docs.python.org/glossary.html#term-decorator
 .. _fapws3: http://github.com/william-os4y/fapws3
 .. _flup: http://trac.saddi.com/flup
 .. _http_code: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 .. _http_method: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html
+.. _lighttpd: http://www.lighttpd.net/
 .. _mako: http://www.makotemplates.org/
 .. _mod_wsgi: http://code.google.com/p/modwsgi/
 .. _paste: http://pythonpaste.org/
+.. _Pound: http://www.apsis.ch/pound/
 .. _wsgi: http://www.wsgi.org/wsgi/
 .. _issue_tracker: http://github.com/defnull/bottle/issues
 
@@ -19,7 +22,7 @@ Tutorial
 
 .. note::
 
-    This is a popy&paste from the old docs and a work in progress. Handle with care :) If you have questions not answered here, please check the :doc:`faq` or file a ticket at bottles issue_tracker_.
+    This is a copy&paste from the old docs and a work in progress. Handle with care :) If you have questions not answered here, please check the :doc:`faq` or file a ticket at bottles issue_tracker_.
 
 
 "Hello World" in a Bottle
@@ -35,11 +38,11 @@ Lets start with a very basic "Hello World" example::
 
 Run this script, visit <http://localhost:8080/hello> and you will see "Hello World!" in your Browser. So, what happened here?
 
-1. First we imported some bottle components. The `route()` decorator and the `run()` function. 
-2. The `route()` [decorator][] is used do bind a piece of code to an URL. In this example we want to answer requests to the `/hello` URL.
-3. This function will be called every time someone hits the `/hello` URL on the web server. It is called a __handler function__ or __callback__.
+1. First we imported some bottle components. The ``route()`` decorator and the ``run()`` function. 
+2. The ``route()`` decorator_ is used do bind a piece of code to an URL. In this example we want to answer requests to the ``/hello`` URL.
+3. This function will be called every time someone hits the ``/hello`` URL on the web server. It is called a **handler function** or **callback**.
 4. The return value of a handler function will be sent back to the Browser.
-5. Now it is time to start the actual HTTP server. The default is a development server running on *localhost* port *8080* and serving requests until you hit __Ctrl-C__
+5. Now it is time to start the actual HTTP server. The default is a development server running on *localhost* port *8080* and serving requests until you hit **Ctrl-C**
 
 
 
@@ -49,7 +52,7 @@ Run this script, visit <http://localhost:8080/hello> and you will see "Hello Wor
 Routing
 ================================================================================
 
-Routes are used to map an URL to a callback function that generate the content for that specific URL. Bottle has a `route()` decorator to do that. You can add any number of routes to a callback.
+Routes are used to map an URL to a callback function that generate the content for that specific URL. Bottle has a ``route()`` decorator to do that. You can add any number of routes to a callback.
 
 ::
 
@@ -70,8 +73,8 @@ As you can see, URLs and routes have nothing to do with actual files on the web 
 HTTP Request Methods
 --------------------------------------------------------------------------------
 
-The `route()` decorator has an optional keyword argument `method` which defaults to `method='GET'`; only GET requests get answered by that route.
-Possible values are `POST`, `PUT`, `DELETE`, `HEAD`, `ANY` or any other [HTTP request method][http_method] you want to listen to. As an alternative, you can use the `@get()`, `@post()`, `@put()` and `@delete()` aliases.
+The ``route()`` decorator has an optional keyword argument ``method`` which defaults to ``method='GET'``; only GET requests get answered by that route.
+Possible values are ``POST``, ``PUT``, ``DELETE``, ``HEAD``, ``ANY`` or any other [HTTP request method][http_method] you want to listen to. As an alternative, you can use the ``@get()``, ``@post()``, ``@put()`` and ``@delete()`` aliases.
 
 ::
 
@@ -84,15 +87,16 @@ Possible values are `POST`, `PUT`, `DELETE`, `HEAD`, `ANY` or any other [HTTP re
 
 \* In this example we used [request.POST](#working-with-http-requests) to access POST form data.
 
-Note that `HEAD` requests will fall back to `GET` routes and all requests will fall back to `ANY` routes, if there is no matching route for the original request method.
+Note that ``HEAD`` requests will fall back to ``GET`` routes and all requests will fall back to ``ANY`` routes, if there is no matching route for the original request method.
 
 
 
 .. _tutorial-dynamic-routes:
+
 Dynamic Routes
 --------------------------------------------------------------------------------
 
-Static routes are fine, but URLs may carry information as well. Let's add a `:name` placeholder to our route.
+Static routes are fine, but URLs may carry information as well. Let's add a ``:name`` placeholder to our route.
 
 ::
 
@@ -101,7 +105,7 @@ Static routes are fine, but URLs may carry information as well. Let's add a `:na
     def hello(name):
         return "Hello %s!" % name
 
-This dynamic route matches `/hello/alice` as well as `/hello/bob`. In fact, the `:name` part will match everything but a slash (`/`), so any name is possible. `/hello/bob/and/alice` or `/hellobob` won't match. Each part of the URL covered by a placeholder is provided as a keyword argument to your handler callback.
+This dynamic route matches ``/hello/alice`` as well as ``/hello/bob``. In fact, the ``:name`` part will match everything but a slash (``/``), so any name is possible. ``/hello/bob/and/alice`` or ``/hellobob`` won't match. Each part of the URL covered by a placeholder is provided as a keyword argument to your handler callback.
 
 A normal placeholder matches everything up to the next slash. To change that, you can add a regular expression pattern::
 
@@ -117,7 +121,7 @@ As you can see, URL parameters remain strings, even if they are configured to on
 The @validate() decorator
 --------------------------------------------------------------------------------
 
-Bottle offers a handy decorator called `validate()` to check and manipulate URL parameters. It takes callables (function or class objects) as keyword arguments and filters every URL parameter through the corresponding callable before they are passed to your request handler.
+Bottle offers a handy decorator called ``validate()`` to check and manipulate URL parameters. It takes callables (function or class objects) as keyword arguments and filters every URL parameter through the corresponding callable before they are passed to your request handler.
 
 ::
 
@@ -128,7 +132,7 @@ Bottle offers a handy decorator called `validate()` to check and manipulate URL 
     def validate_test(i, f, csv):
         return "Int: %d, Float:%f, List:%s" % (i, f, repr(csv))
 
-You may raise `ValueError` in your custom callable if a parameter does not validate.
+You may raise ``ValueError`` in your custom callable if a parameter does not validate.
 
 
 
@@ -169,7 +173,7 @@ simply return unicode or unicode iterables.
     def get_unicode():
         return u'Unicode is encoded with UTF-8 by default'
 
-You can change Bottles default encoding by setting `response.content_type` to a value containing a `charset=...` parameter or by changing `response.charset` directly.
+You can change Bottles default encoding by setting ``response.content_type`` to a value containing a ``charset=...`` parameter or by changing ``response.charset`` directly.
 
 ::
 
@@ -184,14 +188,14 @@ You can change Bottles default encoding by setting `response.content_type` to a 
         response.content_type = 'text/html; charset=latin9'
         return u'ISO-8859-15 is also known as latin9.'
 
-In some rare cases the Python encoding names differ from the names supported by the HTTP specification. Then, you have to do both: First set the `response.content_type` header (which is sent to the client unchanged) and then set the `response.charset` option (which is used to decode unicode).
+In some rare cases the Python encoding names differ from the names supported by the HTTP specification. Then, you have to do both: First set the ``response.content_type`` header (which is sent to the client unchanged) and then set the ``response.charset`` option (which is used to decode unicode).
 
 
 
 File Objects and Streams
 --------------------------------------------------------------------------------
 
-Bottle passes everything that has a `read()` method (file objects) to the `wsgi.file_wrapper` provided by your WSGI server implementation. This wrapper should use optimised system calls (`sendfile` on UNIX) to transfer the file contents.
+Bottle passes everything that has a ``read()`` method (file objects) to the ``wsgi.file_wrapper`` provided by your WSGI server implementation. This wrapper should use optimised system calls (``sendfile`` on UNIX) to transfer the file contents.
 
 ::
 
@@ -204,7 +208,7 @@ Bottle passes everything that has a `read()` method (file objects) to the `wsgi.
 JSON
 --------------------------------------------------------------------------------
 
-Even dictionaries are allowed. They are converted to [json](http://de.wikipedia.org/wiki/JavaScript_Object_Notation) and returned with the `Content-Type` header set to `application/json`. To disable this feature (and pass dicts to your middleware) you can set `bottle.app().autojson` to `False`.
+Even dictionaries are allowed. They are converted to [json](http://de.wikipedia.org/wiki/JavaScript_Object_Notation) and returned with the ``Content-Type`` header set to ``application/json``. To disable this feature (and pass dicts to your middleware) you can set ``bottle.app().autojson`` to ``False``.
 
 ::
 
@@ -217,7 +221,7 @@ Even dictionaries are allowed. They are converted to [json](http://de.wikipedia.
 Static Files
 --------------------------------------------------------------------------------
 
-You can directly return file objects, but `static_file()` is the recommended way to serve static files. It automatically guesses a mime-type, adds a `Last-Modified` header, restricts paths to a `root` directory for security reasons and generates appropriate error responses (401 on permission errors, 404 on missing files). It even supports the `If-Modified-Since` header and eventually generates a `304 Not modified` response. You can pass a custom mimetype to disable mimetype guessing.
+You can directly return file objects, but ``static_file()`` is the recommended way to serve static files. It automatically guesses a mime-type, adds a ``Last-Modified`` header, restricts paths to a ``root`` directory for security reasons and generates appropriate error responses (401 on permission errors, 404 on missing files). It even supports the ``If-Modified-Since`` header and eventually generates a ``304 Not modified`` response. You can pass a custom mimetype to disable mimetype guessing.
 
 ::
 
@@ -230,14 +234,14 @@ You can directly return file objects, but `static_file()` is the recommended way
     def send_file(filename):
         return static_file(filename, root='/path/to/static/files')
 
-You can raise the return value of `static_file()` as an exception if you really need to. The raised `HTTPResponse` exception is handled by the Bottle framework. 
+You can raise the return value of ``static_file()`` as an exception if you really need to. The raised ``HTTPResponse`` exception is handled by the Bottle framework. 
 
 
 
 HTTPError, HTTPResponse and Redirects
 --------------------------------------------------------------------------------
 
-The `abort(code[, message])` function is used to generate [HTTP error pages][http_code].
+The ``abort(code[, message])`` function is used to generate [HTTP error pages][http_code].
 
 ::
 
@@ -246,7 +250,7 @@ The `abort(code[, message])` function is used to generate [HTTP error pages][htt
     def restricted():
         abort(401, "Sorry, access denied.")
 
-To redirect a client to a different URL, you can send a `303 See Other` response with the `Location` header set to the new URL. `redirect(url[, code])` does that for you. You may provide a different HTTP status code as a second parameter.
+To redirect a client to a different URL, you can send a ``303 See Other`` response with the ``Location`` header set to the new URL. ``redirect(url[, code])`` does that for you. You may provide a different HTTP status code as a second parameter.
 
 ::
 
@@ -255,9 +259,9 @@ To redirect a client to a different URL, you can send a `303 See Other` response
     def wrong():
         redirect("/right/url")
 
-Both functions interrupt your handler code by raising a `HTTPError` exception.
+Both functions interrupt your handler code by raising a ``HTTPError`` exception.
 
-You can return `HTTPError` exceptions instead of raising them. This is faster than raising and capturing Exceptions, but does exactly the same.
+You can return ``HTTPError`` exceptions instead of raising them. This is faster than raising and capturing Exceptions, but does exactly the same.
 
 ::
 
@@ -271,7 +275,7 @@ You can return `HTTPError` exceptions instead of raising them. This is faster th
 Exceptions
 --------------------------------------------------------------------------------
 
-All exceptions other than `HTTPResponse` or `HTTPError` will result in a `500 Internal Server Error` response, so they won't crash your WSGI server. You can turn off this behaviour to handle exceptions in your middleware by setting `bottle.app().catchall` to `False`.
+All exceptions other than ``HTTPResponse`` or ``HTTPError`` will result in a ``500 Internal Server Error`` response, so they won't crash your WSGI server. You can turn off this behaviour to handle exceptions in your middleware by setting ``bottle.app().catchall`` to ``False``.
 
 
 
@@ -281,39 +285,39 @@ All exceptions other than `HTTPResponse` or `HTTPError` will result in a `500 In
 Working with HTTP Requests
 ================================================================================
 
-Bottle parses the HTTP request data into a thread-save `request` object and provides some useful tools and methods to access this data. Most of the parsing happens on demand, so you won't see any overhead if you don't need the result. Here is a short summary:
+Bottle parses the HTTP request data into a thread-save ``request`` object and provides some useful tools and methods to access this data. Most of the parsing happens on demand, so you won't see any overhead if you don't need the result. Here is a short summary:
 
-* `request[key]`: A shortcut for `request.environ[key]`
-* `request.environ`: WSGI environment dictionary. Use this with care.
-* `request.app`: Currently used Bottle instance (same as `bottle.app()`)
-* `request.method`: HTTP request-method (GET,POST,PUT,DELETE,...).
-* `request.query_string`: HTTP query-string (http://host/path?query_string)
-* `request.path`: Path string that matched the current route.
-* `request.fullpath`: Full path including the `SCRIPT_NAME` part.
-* `request.url`: The full URL as requested by the client (including `http(s)://` and hostname)
-* `request.input_length` The Content-Length header (if present) as an integer.
-* `request.header`: HTTP header dictionary.
-* `request.GET`: The parsed content of `request.query_string` as a dict. Each value may be a string or a list of strings.
-* `request.POST`: A dict containing parsed form data. Supports URL- and multipart-encoded form data. Each value may be a string, a file or a list of strings or files.
-* `request.COOKIES`: The cookie data as a dict.
-* `request.params`: A dict containing both, `request.GET` and `request.POST` data.
-* `request.body`: The HTTP body of the request as a buffer object.
-* `request.auth`: HTTP authorisation data as a named tuple. (experimental)
-* `request.get_cookie(key[, default])`: Returns a specific cookie and decodes secure cookies. (experimental)
+* ``request[key]``: A shortcut for ``request.environ[key]``
+* ``request.environ``: WSGI environment dictionary. Use this with care.
+* ``request.app``: Currently used Bottle instance (same as ``bottle.app()``)
+* ``request.method``: HTTP request-method (GET,POST,PUT,DELETE,...).
+* ``request.query_string``: HTTP query-string (http://host/path?query_string)
+* ``request.path``: Path string that matched the current route.
+* ``request.fullpath``: Full path including the ``SCRIPT_NAME`` part.
+* ``request.url``: The full URL as requested by the client (including ``http(s)://`` and hostname)
+* ``request.input_length`` The Content-Length header (if present) as an integer.
+* ``request.header``: HTTP header dictionary.
+* ``request.GET``: The parsed content of ``request.query_string`` as a dict. Each value may be a string or a list of strings.
+* ``request.POST``: A dict containing parsed form data. Supports URL- and multipart-encoded form data. Each value may be a string, a file or a list of strings or files.
+* ``request.COOKIES``: The cookie data as a dict.
+* ``request.params``: A dict containing both, ``request.GET`` and ``request.POST`` data.
+* ``request.body``: The HTTP body of the request as a buffer object.
+* ``request.auth``: HTTP authorisation data as a named tuple. (experimental)
+* ``request.get_cookie(key[, default])``: Returns a specific cookie and decodes secure cookies. (experimental)
 
 
 
 Cookies
 --------------------------------------------------------------------------------
 
-Bottle stores cookies sent by the client in a dictionary called `request.COOKIES`. To create new cookies, the method `response.set_cookie(name, value[, **params])` is used. It accepts additional parameters as long as they are valid cookie attributes supported by [SimpleCookie](http://docs.python.org/library/cookie.html#morsel-objects).
+Bottle stores cookies sent by the client in a dictionary called ``request.COOKIES``. To create new cookies, the method ``response.set_cookie(name, value[, **params])`` is used. It accepts additional parameters as long as they are valid cookie attributes supported by [SimpleCookie](http://docs.python.org/library/cookie.html#morsel-objects).
 
 ::
 
     from bottle import response
     response.set_cookie('key','value', path='/', domain='example.com', secure=True, expires=+500, ...)
 
-To set the `max-age` attribute use the `max_age` name.
+To set the ``max-age`` attribute use the ``max_age`` name.
 
 TODO: It is possible to store python objects and lists in cookies. This produces signed cookies, which are pickled and unpickled automatically. 
 
@@ -323,11 +327,11 @@ GET and POST values
 --------------------------------------------------------------------------------
 
 Query strings and/or POST form submissions are parsed into dictionaries and made
-available as `request.GET` and `request.POST`. Multiple values per
+available as ``request.GET`` and ``request.POST``. Multiple values per
 key are possible, so each value of these dictionaries may contain a string
 or a list of strings.
 
-You can use `.getone(key[, default])` to get a single value only.
+You can use ``.getone(key[, default])`` to get a single value only.
 
 ::
 
@@ -370,7 +374,7 @@ Templates
 ================================================================================
 
 Bottle uses its own little template engine by default. You can use a template by
-calling `template(template_name, **template_arguments)` and returning
+calling ``template(template_name, **template_arguments)`` and returning
 the result.
 
 ::
@@ -379,9 +383,9 @@ the result.
     def hello(name):
         return template('hello_template', username=name)
 
-This will load the template `hello_template.tpl` with the `username` variable set to the URL `:name` part and return the result as a string.
+This will load the template ``hello_template.tpl`` with the ``username`` variable set to the URL ``:name`` part and return the result as a string.
 
-The `hello_template.tpl` file could look like this::
+The ``hello_template.tpl`` file could look like this::
 
     <h1>Hello {{username}}</h1>
     <p>How are you?</p>
@@ -391,8 +395,8 @@ The `hello_template.tpl` file could look like this::
 Template search path
 --------------------------------------------------------------------------------
 
-The list `bottle.TEMPLATE_PATH` is used to map template names to actual 
-file names. By default, this list contains `['./%s.tpl', './views/%s.tpl']`.
+The list ``bottle.TEMPLATE_PATH`` is used to map template names to actual 
+file names. By default, this list contains ``['./%s.tpl', './views/%s.tpl']``.
 
 
 
@@ -401,7 +405,7 @@ Template caching
 
 Templates are cached in memory after compilation. Modifications made to 
 the template file will have no affect until you clear the template 
-cache. Call `bottle.TEMPLATES.clear()` to do so.
+cache. Call ``bottle.TEMPLATES.clear()`` to do so.
 
 
 
@@ -413,10 +417,10 @@ It's main purpose is to ensure correct indention of blocks, so you
 can format your template without worrying about indentions. Here is the 
 complete syntax description:
 
-* `%...` starts a line of python code. You don't have to worry about indentions. Bottle handles that for you.
-* `%end` closes a Python block opened by `%if ...`, `%for ...` or other block statements. Explicitly closing of blocks is required.
-* `{{...}}` prints the result of the included python statement.
-* `%include template_name optional_arguments` allows you to include other templates.
+* ``%...`` starts a line of python code. You don't have to worry about indentions. Bottle handles that for you.
+* ``%end`` closes a Python block opened by ``%if ...``, ``%for ...`` or other block statements. Explicitly closing of blocks is required.
+* ``{{...}}`` prints the result of the included python statement.
+* ``%include template_name optional_arguments`` allows you to include other templates.
 * Every other line is returned as text.
 
 Example::
@@ -450,8 +454,8 @@ Example::
 Using WSGI and Middleware
 ================================================================================
 
-A call to `bottle.default_app()` returns your WSGI application. After applying as many WSGI middleware modules as you like, you can tell 
-`bottle.run()` to use your wrapped application, instead of the default one.
+A call to ``bottle.default_app()`` returns your WSGI application. After applying as many WSGI middleware modules as you like, you can tell 
+``bottle.run()`` to use your wrapped application, instead of the default one.
 
 ::
 
@@ -465,8 +469,8 @@ A call to `bottle.default_app()` returns your WSGI application. After applying a
 How default_app() works
 --------------------------------------------------------------------------------
 
-Bottle creates a single instance of `bottle.Bottle()` and uses it as a default for most of the modul-level decorators and the `bottle.run()` routine. 
-`bottle.default_app()` returns (or changes) this default. You may, however, create your own instances of `bottle.Bottle()`.
+Bottle creates a single instance of ``bottle.Bottle()`` and uses it as a default for most of the modul-level decorators and the ``bottle.run()`` routine. 
+``bottle.default_app()`` returns (or changes) this default. You may, however, create your own instances of ``bottle.Bottle()``.
 
 ::
 
@@ -526,7 +530,7 @@ child process using the same command line agruments used to start the
 main process. All module level code is executed at least twice! Be 
 carefull.
 
-The child process will have `os.environ['BOTTLE_CHILD']` set to `true` 
+The child process will have ``os.environ['BOTTLE_CHILD']`` set to ``true`` 
 and start as a normal non-reloading app server. As soon as any of the 
 loaded modules changes, the child process is terminated and respawned by 
 the main process. Changes in template files will not trigger a reload. 
@@ -534,16 +538,16 @@ Please use debug mode to deactivate template caching.
 
 The reloading depends on the ability to stop the child process. If you are
 running on Windows or any other operating system not supporting 
-`signal.SIGINT` (which raises `KeyboardInterrupt` in Python), 
-`signal.SIGTERM` is used to kill the child. Note that exit handlers and 
-finally clauses, etc., are not executed after a `SIGTERM`.
+``signal.SIGINT`` (which raises ``KeyboardInterrupt`` in Python), 
+``signal.SIGTERM`` is used to kill the child. Note that exit handlers and 
+finally clauses, etc., are not executed after a ``SIGTERM``.
 
 
 
 Deployment
 ================================================================================
 
-Bottle uses the build-in `wsgiref.SimpleServer` by default. This non-threading
+Bottle uses the build-in ``wsgiref.SimpleServer`` by default. This non-threading
 HTTP server is perfectly fine for development and early production,
 but may become a performance bottleneck when server load increases.
 
@@ -569,7 +573,7 @@ or [fapws3][fapws3] and use the corresponding bottle server-adapter.
     
 If bottle is missing an adapter for your favorite server or you want to tweak
 the server settings, you may want to manually set up your HTTP server and use
-`bottle.default_app()` to access your WSGI application.
+``bottle.default_app()`` to access your WSGI application.
 
 ::
 
@@ -601,10 +605,10 @@ But there are a few drawbacks:
 * You can't easily share data between multiple Python processes.
 * It takes a lot of memory to run several copies of Python and Bottle at the same time.
 
-One of the fastest load balancer available is [pound](http://www.apsis.ch/pound/) but most common web servers have a proxy-module that can do the work just fine.
+One of the fastest load balancer available is Pound_ but most common web servers have a proxy-module that can do the work just fine.
 
-I'll add examples for [lighttpd](http://www.lighttpd.net/) and 
-[Apache](http://www.apache.org/) web servers soon.
+I'll add examples for lighttpd_ and 
+Apache_ web servers soon.
 
 
 
@@ -612,11 +616,11 @@ Apache mod_wsgi
 --------------------------------------------------------------------------------
 
 Instead of running your own HTTP server from within Bottle, you can 
-attach Bottle applications to an [Apache server][apache] using 
-[mod_wsgi][] and Bottles WSGI interface.
+attach Bottle applications to an `Apache server`_ using 
+mod_wsgi_ and Bottle's WSGI interface.
 
-All you need is an `app.wsgi` file that provides an 
-`application` object. This object is used by mod_wsgi to start your 
+All you need is an ``app.wsgi`` file that provides an 
+``application`` object. This object is used by mod_wsgi to start your 
 application and should be a WSGI conform Python callable.
 
 File ``/var/www/yourapp/app.wsgi``::
