@@ -56,7 +56,7 @@ Se usan rutas para conectar una URL a una función (*callback*) que genera el co
     def hello():
         return "¡Hola, Mundo!"
 
-Como puede ver, las URLs y las rutas no tienen nada que ver con ficheros reales en el servidor web. Las rutas son nombres únicos para las funciones controladoras, nada más y nada menos. Las peticiones a URLs que no encajen con ninguna ruta se responden con una página de error HTTP 404. Las exceptions que ocurran dentro de una función controladora causarán una respuesta de error HTTP 500. 
+Como puede ver, las URLs y las rutas no tienen nada que ver con ficheros reales en el servidor web. Las rutas son nombres únicos para las funciones controladoras, nada más y nada menos. Las peticiones a URLs que no encajen con ninguna ruta se responden con una página de error HTTP 404. Las excepciones que ocurran dentro de una función controladora causarán una respuesta de error HTTP 500. 
 
 
 
@@ -86,7 +86,7 @@ Nótese que las peticiones `HEAD` se responden con la ruta `GET` si no tienen un
 
 ## Rutas Dinámicas
 
-Las rutas estáticas están bien, per las URLs pueden también incluir información. Vamos a añadirle una variable `:name` a nuestra ruta.
+Las rutas estáticas están bien, pero las URLs pueden también incluir información. Vamos a añadirle una variable `:name` a nuestra ruta.
 
     #!Python
     from bottle import route
