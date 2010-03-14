@@ -574,6 +574,7 @@ class Request(threading.local, DictMixin):
         ''' Shift some levels of PATH_INFO into SCRIPT_NAME and return the
             moved part. count defaults to 1'''
         #/a/b/  /c/d  --> 'a','b'  'c','d'
+        if count == 0: return ''
         pathlist = self.path.strip('/').split('/')
         scriptlist = self.environ.get('SCRIPT_NAME','/').strip('/').split('/')
         if pathlist and pathlist[0] == '': pathlist = []
@@ -1489,10 +1490,10 @@ class SimpleTemplate(BaseTemplate):
                 if m: self.encoding = m.group(1)
                 if m: line = line.replace('coding','coding (removed)')
             if line.strip()[:2].count('%') == 1:
-                line = line.split('%',1)[1] # Full line
-                cline = line.split('#')[0].strip() # Line without commends
-                cmd = line.split()[0] if line.split() else '' # Command word
-                flush() ##encodig
+                line = line.split('%',1)[1].lstrip() # Full line following the %
+                cline = line.split('#')[0].strip() # Line without commends (TODO: fails for 'a="#"')
+                cmd = re.split(r'[^a-zA-Z0-9_]', line)[0]
+                flush() ##encodig (TODO: why?)
                 if cmd in self.blocks:
                     if cmd in self.dedent_blocks: cmd = stack.pop()
                     code(line)
