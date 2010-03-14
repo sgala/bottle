@@ -13,9 +13,10 @@
 .. _mod_wsgi: http://code.google.com/p/modwsgi/
 .. _paste: http://pythonpaste.org/
 .. _Pound: http://www.apsis.ch/pound/
-.. _wsgi: http://www.wsgi.org/wsgi/
+.. _`WSGI Specification`: http://www.wsgi.org/wsgi/
 .. _issue: http://github.com/defnull/bottle/issues
 .. _Python: http://python.org/
+.. _SimpleCookie: http://docs.python.org/library/cookie.html#morsel-objects
 .. _testing: http://github.com/defnull/bottle/raw/master/bottle.py
 
 ========
@@ -165,7 +166,7 @@ You may raise ``ValueError`` in your custom callable if a parameter does not val
 Generating content
 ================================================================================
 
-The [WSGI specification][wsgi] expects an iterable list of byte strings to be returned from your application and can't handle file objects, unicode, dictionaries or exceptions.
+The `WSGI specification`_ expects an iterable list of byte strings to be returned from your application and can't handle file objects, unicode, dictionaries or exceptions.
 
 ::
 
@@ -334,7 +335,7 @@ Bottle parses the HTTP request data into a thread-save ``request`` object and pr
 Cookies
 --------------------------------------------------------------------------------
 
-Bottle stores cookies sent by the client in a dictionary called ``request.COOKIES``. To create new cookies, the method ``response.set_cookie(name, value[, **params])`` is used. It accepts additional parameters as long as they are valid cookie attributes supported by [SimpleCookie](http://docs.python.org/library/cookie.html#morsel-objects).
+Bottle stores cookies sent by the client in a dictionary called ``request.COOKIES``. To create new cookies, the method ``response.set_cookie(name, value[, **params])`` is used. It accepts additional parameters as long as they are valid cookie attributes supported by `SimpleCookie`_.
 
 ::
 
