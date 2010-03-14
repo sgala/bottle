@@ -13,9 +13,10 @@
 .. _mod_wsgi: http://code.google.com/p/modwsgi/
 .. _paste: http://pythonpaste.org/
 .. _Pound: http://www.apsis.ch/pound/
-.. _wsgi: http://www.wsgi.org/wsgi/
+.. _`WSGI Specification`: http://www.wsgi.org/wsgi/
 .. _issue: http://github.com/defnull/bottle/issues
 .. _Python: http://python.org/
+.. _SimpleCookie: http://docs.python.org/library/cookie.html#morsel-objects
 .. _testing: http://github.com/defnull/bottle/raw/master/bottle.py
 
 ========
@@ -90,7 +91,7 @@ As you can see, URLs and routes have nothing to do with actual files on the web 
 
 .. rubric:: HTTP Request Methods
 
-  The :func:`route` decorator has an optional keyword argument called ``method`` which defaults to ``method='GET'``; only GET requests get answered by that routes. Possible values are `POST`, `PUT`, `DELETE`, `HEAD` or any other [HTTP request method][http_method] you want to listen to. As an alternative, you can use the :func:`get()`, :func:`post()`, :func:`put()` and :func:`delete()` aliases.
+The :func:`route` decorator has an optional keyword argument called ``method`` which defaults to ``method='GET'``; only GET requests get answered by that routes. Possible values are `POST`, `PUT`, `DELETE`, `HEAD` or any other [HTTP request method][http_method] you want to listen to. As an alternative, you can use the :func:`get()`, :func:`post()`, :func:`put()` and :func:`delete()` aliases.
 
 The special ``ANY`` method works as a low priority fallback. It matches requests regardless of their HTTP method but only if no other more specific route can handle that same request.
 
@@ -165,7 +166,7 @@ You may raise ``ValueError`` in your custom callable if a parameter does not val
 Generating content
 ================================================================================
 
-The [WSGI specification][wsgi] expects an iterable list of byte strings to be returned from your application and can't handle file objects, unicode, dictionaries or exceptions.
+The `WSGI specification`_ expects an iterable list of byte strings to be returned from your application and can't handle file objects, unicode, dictionaries or exceptions.
 
 ::
 
@@ -334,7 +335,7 @@ Bottle parses the HTTP request data into a thread-save ``request`` object and pr
 Cookies
 --------------------------------------------------------------------------------
 
-Bottle stores cookies sent by the client in a dictionary called ``request.COOKIES``. To create new cookies, the method ``response.set_cookie(name, value[, **params])`` is used. It accepts additional parameters as long as they are valid cookie attributes supported by [SimpleCookie](http://docs.python.org/library/cookie.html#morsel-objects).
+Bottle stores cookies sent by the client in a dictionary called ``request.COOKIES``. To create new cookies, the method ``response.set_cookie(name, value[, **params])`` is used. It accepts additional parameters as long as they are valid cookie attributes supported by `SimpleCookie`_.
 
 ::
 
@@ -703,6 +704,12 @@ Glossary
 
 .. glossary::
 
+   callback
+      Programmer code that is to be called when some external action happens.
+      In the context of web frameworks, the mapping between URL paths and 
+      application code is often achieved by specifying a callback function
+      for each URL.
+
    decorator
       A function returning another function, usually applied as a function transformation using the ``@decorator`` syntax. See `python documentation for function definition  <http://docs.python.org/reference/compound_stmts.html#function>`_ for more about decorators.
 
@@ -711,6 +718,11 @@ Glossary
       saved, and used for cross-referencing.  The environment is pickled
       after the parsing stage, so that successive runs only need to read
       and parse new and changed documents.
+
+   handler function
+      A function to handle some specific event or situation. In a web
+      framework, the application is developed by attaching a handler function
+      as callback for each specific URL composing the application.
 
    source directory
       The directory which, including its subdirectories, contains all
