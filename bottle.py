@@ -53,7 +53,7 @@ This is an example::
         return 'Hello %s!' % name
     
     @route('/static/:filename#.*#')
-    def static_file(filename):
+    def static(filename):
         return static_file(filename, root='/path/to/static/files/')
     
     run(host='localhost', port=8080)
