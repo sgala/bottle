@@ -190,7 +190,7 @@ También pueden devolverse diccionarios. Se convierten en [json](http://de.wikip
 
 ## Ficheros estáticos
 
-Ya hemos dicho que se puede devolver directamente ficheros (objetos de tipo `file`). Sin embargo la manera recomendada de servir ficheros estáticos es `static_file()`. Automáticamente adivina el tipo de media de internet (MIME), añade una cabecera `Last-Modified`, restringe las rutas a un directorio raiz (`root`) por razones de seguridad y genera las respuestas de error apropiadas: 401 para los errores de permisos, 404 si falta el fichero. Incluso soporta la cabecera `If-Modified-Since` y genera en caso necesario una respuesta `304 Not modified`. Se le puede pasar un `mimetype` para deshabilitar el intento de adivinarlo.
+Ya hemos dicho que se puede devolver directamente ficheros (objetos de tipo `file`). Sin embargo la manera recomendada de servir ficheros estáticos es `static_file()`. Automáticamente adivina el tipo del archivo (*de media de internet* o MIME), añade una cabecera `Last-Modified`, restringe las rutas a un directorio raiz (`root`) por razones de seguridad y genera las respuestas de error apropiadas: 401 para los errores de permisos, 404 si falta el fichero. Incluso soporta la cabecera `If-Modified-Since` y genera en caso necesario una respuesta `304 Not modified`. Se le puede pasar un `mimetype` para deshabilitar el intento de adivinarlo.
 
     #!Python
     from bottle import static_file
