@@ -128,7 +128,7 @@ Se puede lanzar (`raise`) la excepción `ValueError` en los llamables que escrib
 
 # Generación de contenido
 
-La especificación [WSGI][wsgi] espera que la aplicación devuelva un iterable que produzca una secuencia de cadenas de bytes, y no sabe manejar ficheros, unicode, diccionarios or excepciones.
+La especificación [WSGI][wsgi] espera que la aplicación devuelva un iterable que produzca una secuencia de cadenas de bytes, y no sabe manejar unicode, diccionarios or excepciones. Si se devuelve un fichero, un servidor WSGI usará sólo el contenido, sin tener en cuenta las fechas de modificación para caches y ahorro de recursos.
 
     #!Python
     @route('/wsgi')
