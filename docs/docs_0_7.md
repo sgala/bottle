@@ -186,6 +186,7 @@ También pueden devolverse diccionarios. Se convierten en [json](http://de.wikip
     #!Python
     @route('/api/status')
     def api_status():
+        import time
         return {'status':'online', 'servertime':time.time()}
 
 ## Ficheros estáticos
