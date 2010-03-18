@@ -92,7 +92,7 @@ As you can see, URLs and routes have nothing to do with actual files on the web 
 
 .. rubric:: HTTP Request Methods
 
-The :func:`route` decorator has an optional keyword argument called ``method`` which defaults to ``method='GET'``; only GET requests get answered by that routes. Possible values are `POST`, `PUT`, `DELETE`, `HEAD` or any other [HTTP request method][http_method] you want to listen to. As an alternative, you can use the :func:`get()`, :func:`post()`, :func:`put()` and :func:`delete()` aliases.
+The :func:`route` decorator has an optional keyword argument called ``method`` which defaults to ``method='GET'``; only GET requests get answered by that routes. Possible values are `POST`, `PUT`, `DELETE`, `HEAD` or any other [HTTP request method][http_method] you want to listen to. As an alternative, you can use the :func:`get`, :func:`post`, :func:`put` and :func:`delete` aliases.
 
 The special ``ANY`` method works as a low priority fallback. It matches requests regardless of their HTTP method but only if no other more specific route can handle that same request.
 
@@ -246,7 +246,7 @@ Even dictionaries are allowed. They are converted to json_ and returned with the
 Static Files
 --------------------------------------------------------------------------------
 
-You can directly return file objects, but ``static_file()`` is the recommended way to serve static files. It automatically guesses a mime-type, adds a ``Last-Modified`` header, restricts paths to a ``root`` directory for security reasons and generates appropriate error responses (401 on permission errors, 404 on missing files). It even supports the ``If-Modified-Since`` header and eventually generates a ``304 Not modified`` response. You can pass a custom mimetype to disable mimetype guessing.
+You can directly return file objects, but :func:`static_file` is the recommended way to serve static files. It automatically guesses a mime-type, adds a ``Last-Modified`` header, restricts paths to a ``root`` directory for security reasons and generates appropriate error responses (401 on permission errors, 404 on missing files). It even supports the ``If-Modified-Since`` header and eventually generates a ``304 Not modified`` response. You can pass a custom mimetype to disable mimetype guessing.
 
 ::
 
