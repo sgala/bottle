@@ -53,7 +53,7 @@ This is an example::
         return 'Hello %s!' % name
     
     @route('/static/:filename#.*#')
-    def static_file(filename):
+    def static(filename):
         return static_file(filename, root='/path/to/static/files/')
     
     run(host='localhost', port=8080)
@@ -425,16 +425,16 @@ class Bottle(object):
             return handler
         return wrapper
 
-    def handle(self, url, method, catchall=True):
+    def handle(self, url, method):
         """ Execute the handler bound to the specified url and method and return
         its output. If catchall is true, exceptions are catched and returned as
         HTTPError(500) objects. """
         if not self.serve:
             return HTTPError(503, "Server stopped")
 
-        handler, args = self.match_url(request.path, request.method)
+        handler, args = self.match_url(url, method)
         if not handler:
-            return HTTPError(404, "Not found:" + request.path)
+            return HTTPError(404, "Not found:" + url)
 
         try:
             return handler(**args)
@@ -446,7 +446,7 @@ class Bottle(object):
                 raise
             return HTTPError(500, 'Unhandled exception', e, format_exc(10))
 
-    def _cast(self, out, peek=None):
+    def _cast(self, out, request, response, peek=None):
         """ Try to convert the parameter into something WSGI compatible and set
         correct HTTP headers when possible.
         Support: False, str, unicode, dict, HTTPResponse, HTTPError, file-like,
@@ -455,7 +455,7 @@ class Bottle(object):
         # Filtered types (recursive, because they may return anything)
         for testtype, filterfunc in self.castfilter:
             if isinstance(out, testtype):
-                return self._cast(filterfunc(out))
+                return self._cast(filterfunc(out), request, response)
 
         # Empty output is done here
         if not out:
@@ -474,10 +474,10 @@ class Bottle(object):
         # HTTPError or HTTPException (recursive, because they may wrap anything)
         if isinstance(out, HTTPError):
             out.apply(response)
-            return self._cast(self.error_handler.get(out.status, repr)(out))
+            return self._cast(self.error_handler.get(out.status, repr)(out), request, response)
         if isinstance(out, HTTPResponse):
             out.apply(response)
-            return self._cast(out.output)
+            return self._cast(out.output, request, response)
 
         # Cast Files into iterables
         if hasattr(out, 'read') and 'wsgi.file_wrapper' in request.environ:
@@ -491,7 +491,7 @@ class Bottle(object):
             while not first:
                 first = out.next()
         except StopIteration:
-            return self._cast('')
+            return self._cast('', request, response)
         except HTTPResponse, e:
             first = e
         except Exception, e:
@@ -501,14 +501,14 @@ class Bottle(object):
                 raise
         # These are the inner types allowed in iterator or generator objects.
         if isinstance(first, HTTPResponse):
-            return self._cast(first)
+            return self._cast(first, request, response)
         if isinstance(first, StringType):
             return itertools.chain([first], out)
         if isinstance(first, unicode):
             return itertools.imap(lambda x: x.encode(response.charset),
                                   itertools.chain([first], out))
         return self._cast(HTTPError(500, 'Unsupported response type: %s'\
-                                         % type(first)))
+                                         % type(first)), request, response)
 
     def __call__(self, environ, start_response):
         """ The bottle WSGI-interface. """
@@ -516,7 +516,7 @@ class Bottle(object):
             request.bind(environ, self)
             response.bind(self)
             out = self.handle(request.path, request.method)
-            out = self._cast(out)
+            out = self._cast(out, request, response)
             if response.status in (100, 101, 204, 304) or request.method == 'HEAD':
                 out = [] # rfc2616 section 4.3
             status = '%d %s' % (response.status, HTTP_CODES[response.status])
@@ -570,6 +570,10 @@ class Request(threading.local, DictMixin):
         self.path = '/' + environ.get('PATH_INFO', '/').lstrip('/')
         self.method = environ.get('REQUEST_METHOD', 'GET').upper()
 
+    def copy(self):
+        ''' Returns a copy of self '''
+        return Request(self.environ.copy(), self.app)
+        
     def path_shift(self, count=1):
         ''' Shift some levels of PATH_INFO into SCRIPT_NAME and return the
             moved part. count defaults to 1'''
@@ -758,14 +762,24 @@ class Response(threading.local):
     """ Represents a single HTTP response using thread-local attributes.
     """
 
+    def __init__(self, app=None):
+        self.bind(app)
+
     def bind(self, app):
         """ Resets the Response object to its factory defaults. """
         self._COOKIES = None
         self.status = 200
         self.headers = HeaderDict()
         self.content_type = 'text/html; charset=UTF-8'
-        self.error = None
         self.app = app
+
+    def copy(self):
+        ''' Returns a copy of self '''
+        copy = Response(self.app)
+        copy.status = self.status
+        copy.headers = self.headers.copy()
+        copy.content_type = self.content_type
+        return copy
 
     def wsgiheader(self):
         ''' Returns a wsgi conform list of header/value pairs. '''
@@ -944,8 +958,8 @@ def static_file(filename, root, guessmime=True, mimetype=None, download=False):
     if ims:
         ims = ims.split(";")[0].strip() # IE sends "<date>; length=146"
         ims = parse_date(ims)
-        if ims is not None and ims >= stats.st_mtime:
-           return HTTPResponse("Not modified", status=304, header=header)
+        if ims is not None and ims >= int(stats.st_mtime):
+           return HTTPResponse(status=304, header=header)
     header['Content-Length'] = stats.st_size
     if request.method == 'HEAD':
         return HTTPResponse('', header=header)

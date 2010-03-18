@@ -167,7 +167,7 @@ You may raise ``ValueError`` in your custom callable if a parameter does not val
 Generating content
 ================================================================================
 
-The `WSGI specification`_ expects an iterable list of byte strings to be returned from your application and can't handle file objects, unicode, dictionaries or exceptions.
+The `WSGI specification`_ expects an iterable list of byte strings to be returned from your application and can't handle unicode, dictionaries or exceptions. File objects will be handled as iterables in *pure* WSGI, with no conditional caching or ``Content-Length`` calculation. 
 
 ::
 
@@ -329,7 +329,7 @@ Bottle parses the HTTP request data into a thread-save ``request`` object and pr
 * ``request.params``: A dict containing both, ``request.GET`` and ``request.POST`` data.
 * ``request.body``: The HTTP body of the request as a buffer object.
 * ``request.auth``: HTTP authorisation data as a named tuple. (experimental)
-* ``request.get_cookie(key[, default])``: Returns a specific cookie and decodes secure cookies. (experimental)
+* ``request.get_cookie(key[, default])``: Returns a specific cookie. If it is a :term:`secure cookie` it is decoded. (experimental)
 
 
 
@@ -724,6 +724,12 @@ Glossary
       A function to handle some specific event or situation. In a web
       framework, the application is developed by attaching a handler function
       as callback for each specific URL composing the application.
+
+   secure cookie
+      bottle creates signed cookies with objects that can be pickled. A secure
+      cookie will be created automatically when a type that is not a string is
+      use as value in :meth:`request.set_cookie` and bottle's config
+      includes a `securecookie.key` entry with a salt.
 
    source directory
       The directory which, including its subdirectories, contains all
