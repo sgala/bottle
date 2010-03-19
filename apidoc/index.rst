@@ -61,6 +61,7 @@ This documentation is a work in progress. If you have questions not answered her
    :maxdepth: 2
 
    tutorial
+   tutorial_app
    faq
    api
    stpl
