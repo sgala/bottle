@@ -499,7 +499,7 @@ As above the ToDo list example was developed piece by piece, here is the complet
 Main code for the application `todo.py`:
 
     #!Python
-    import sqlite3
+    import os, sqlite3
     from bottle import route, run, debug, template, request, validate, error
 
     # only needed when you run Bottle on mod_wsgi
@@ -580,8 +580,19 @@ Main code for the application `todo.py`:
         return 'Sorry, this page does not exist!'
 
 
-    debug(True)      
-    run(reloader=True)
+    debug(True)
+
+    def main():
+        run(reloader=True)
+
+    if __name__ == "main()":
+        # Interactive mode
+        main()
+    else:
+        # Mod WSGI launch
+        os.chdir(os.path.dirname(__file__))
+        application = default_app()
+
     #remember to remove reloader=True and debug(True) when you move your application from development to a productive environment.
 
 Template `edit_task.tpl`:
