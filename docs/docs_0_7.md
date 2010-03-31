@@ -324,7 +324,7 @@ El ejemplo anterior cargará la plantilla `hello_template.tpl` dándole a la var
 
 El fichero `hello_template.tpl` podría tener este aspecto:
 
-    #!html
+    #!html+django
     <h1>Hola {{username}}</h1>
     <p>¿Cómo estás?</p>
 
@@ -358,7 +358,7 @@ Su propósito principal es asegurar la indentación correcta de los bloques, de 
 
 Ejemplo:
 
-    #!html
+    #!html+django
     %header = 'Test Template'
     %items = [1,2,3,'fly']
     %include http_header title=header, use_js=['jquery.js', 'default.js']
