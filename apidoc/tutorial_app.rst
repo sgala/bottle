@@ -589,7 +589,7 @@ Main code for the application ``todo.py``::
     
     #remember to remove reloader=True and debug(True) when you move your application from development to a productive environment.
     
-    if __name__ == "main()":
+    if __name__ == "__main__":
         # Interactive mode
         main()
     else:

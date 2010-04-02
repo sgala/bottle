@@ -585,7 +585,7 @@ Main code for the application `todo.py`:
     def main():
         run(reloader=True)
 
-    if __name__ == "main()":
+    if __name__ == "__main__":
         # Interactive mode
         main()
     else:
