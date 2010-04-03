@@ -50,6 +50,8 @@ The contained python statement is executed at render-time and has access to all 
   >>> template('Hello {{!name}}!', name='<b>World</b>')
   u'Hello <b>World</b>!'
 
+.. highlight:: html+django
+
 .. rubric:: Embedded python code
 
 The ``%`` character marks a line of python code. The only difference between this and real python code is that you have to explicitly close blocks with an ``%end`` statement. In return you can align the code with the surrounding template and don't have to worry about correct indention of blocks. The *SimpleTemplate* parser handles that for you. Lines *not* starting with a ``%`` are rendered as text as usual::
@@ -110,9 +112,14 @@ Main-template named ``content.tpl``::
   This is the page content: {{content}}
   %rebase layout title='Content Title'
 
-Now you can render ``content.tpl``::
+Now you can render ``content.tpl``:
+
+.. code-block:: python
 
   >>> print template('content', content='Hello World!')
+
+.. code-block:: html
+
   <html>
   <head>
     <title>Content Title</title>
@@ -142,9 +149,14 @@ The ``columns.tpl`` base-template uses the two callables to render the content o
     %right()
   </div>
 
-Lets see how ``block_content.tpl`` renders::
+Lets see how ``block_content.tpl`` renders:
+
+.. code-block:: python
 
   >>> print template('block_content', title='Hello World!')
+
+.. code-block:: html
+
   <html>
   <head>
     <title>Hello World</title>

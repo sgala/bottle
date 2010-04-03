@@ -222,7 +222,9 @@ Bottle handles file uploads similar to normal POST form data. Instead of strings
         datafile = request.POST.get('datafile')
         return datafile.read()
 
-Here is an example HTML Form for file uploads::
+Here is an example HTML Form for file uploads:
+
+.. code-block:: html
 
     <form action="/upload" method="post" enctype="multipart/form-data">
       <input name="datafile" type="file" />
@@ -388,6 +390,8 @@ the result.
 
 This will load the template ``hello_template.tpl`` with the ``username`` variable set to the URL ``:name`` part and return the result as a string.
 
+.. highlight:: html+django
+
 The ``hello_template.tpl`` file could look like this::
 
     <h1>Hello {{username}}</h1>
@@ -467,6 +471,8 @@ Debug Mode
 
 In debug mode, bottle is much more verbose and tries to help you finding 
 bugs. You should never use debug mode in production environments.
+
+.. highlight:: python
 
 ::
 
