@@ -61,24 +61,21 @@ You can either manually install Bottle or use Python's easy_install: ``easy_inst
 
 .. rubric:: Further Software Necessities
 
-As we use SQLite3 as a database, make sure it is installed. On Linux systems, most distributions have SQLite3 installed by default. SQLite is available for [Windows and MacOS X][sqlite_win] as well.
-
-Furthermore, you need [Pysqlite][pysqlite], the Python modules to access SQLite databases. Again, many Linux distributions have the module (often called "python-sqlite3") pre-installed, otherwise just install manually or via ``easy_install pysqlite``.
-
-*Note*: Many older systems have SQLite2 pre-installed. All examples will work fine with this version, too. You just need to import the corresponding Python module named "sqlite" instead of "sqlite3", as used in the examples below.
-
+As we use SQLite3 as a database, make sure it is installed. On Linux systems, most distributions have SQLite3 installed by default. SQLite is available for [Windows and MacOS X][sqlite_win] as well and the `sqlite3` module is part of the python standard library.
 
 .. rubric:: Create An SQL Database
 
-First, we need to create the database we use later on. To do so, run SQLite with the command ``sqlite3 todo.db``. This will create an empty data base called ``todo.sql`` and you will see the SQLite prompt, which may look like this: ``sqlite>``. Right here, input the following commands::
+First, we need to create the database we use later on. To do so, save the following script in your project directory and run it with python. You can use the interactive interpreter, too::
 
-    CREATE TABLE todo (id INTEGER PRIMARY KEY, task char(100) NOT NULL, status bool NOT NULL);
-    INSERT INTO todo (task,status) VALUES ('Read A-byte-of-python to get a good introduction into Python',0);
-    INSERT INTO todo (task,status) VALUES ('Visit the Python website',1);
-    INSERT INTO todo (task,status) VALUES ('Test various editors for and check the syntax highlighting',1);
-    INSERT INTO todo (task,status) VALUES ('Choose your favorite WSGI-Framework',0);
+    import sqlite3
+    con = sqlite3.connect('todo.db') # Warning: This file is created in the current directory
+    con.execute("CREATE TABLE todo (id INTEGER PRIMARY KEY, task char(100) NOT NULL, status bool NOT NULL)")
+    con.execute("INSERT INTO todo (task,status) VALUES ('Read A-byte-of-python to get a good introduction into Python',0)")
+    con.execute("INSERT INTO todo (task,status) VALUES ('Visit the Python website',1)")
+    con.execute("INSERT INTO todo (task,status) VALUES ('Test various editors for and check the syntax highlighting',1)")
+    con.execute("INSERT INTO todo (task,status) VALUES ('Choose your favorite WSGI-Framework',0)")
 
-The first line generates a tables called ``todo`` with the three columns ``id``, ``task``, and ``status``. ``id`` is a unique id for each row, which is used later on to reference the rows. The column ``task`` holds the text which describes the task, it can be max 100 characters long. Finally, the column ``status`` is used to mark a task as open (value 1) or closed (value 0).
+This generates a database-file `todo.db` with a tables called ``todo`` and three columns ``id``, ``task``, and ``status``. ``id`` is a unique id for each row, which is used later on to reference the rows. The column ``task`` holds the text which describes the task, it can be max 100 characters long. Finally, the column ``status`` is used to mark a task as open (value 1) or closed (value 0).
 
 Using Bottle for a web-based ToDo list
 ================================================
@@ -149,7 +146,11 @@ Maybe you already experienced the Bottle sends a short error message to the brow
 
 By enabling "debug", you will get a full stacktrace of the Python interpreter, which usually contains useful information for finding bugs. Furthermore, templates (see below) are not cached, thus changes to template will take effect without stopping the server.
 
-**Note** that ``debug(True)`` is supposed to be used for development only, it should *not* be used in productive environments.
+.. warning::
+
+   That ``debug(True)`` is supposed to be used for development only, it should *not* be used in productive environments.
+
+
 
 A further quiet nice feature is auto-reloading, which is enabled by modifying the ``run()`` statement to
 
@@ -230,8 +231,8 @@ To do so, we first add a new route to our script and tell the route that it shou
         conn = sqlite3.connect('todo.db')
         c = conn.cursor()
         
-        query = "INSERT INTO todo (task,status) VALUES ('%s',1)" %new
-        c.execute(query)
+        query = "INSERT INTO todo (task,status) VALUES (?, 1)"
+        c.execute(query, new)
         conn.commit()
         
         c.execute("SELECT last_insert_rowid()")
@@ -258,19 +259,18 @@ The code need to be extended to::
         conn = sqlite3.connect('todo.db')
         c = conn.cursor()
         
-        query = "INSERT INTO todo (task,status) VALUES ('%s',1)" %new
-        c.execute(query)
+        query = "INSERT INTO todo (task,status) VALUES (?, 1)"
+        c.execute(query, new)
         conn.commit()
         
         c.execute("SELECT last_insert_rowid()")
         new_id = c.fetchone()[0]
         c.close 
-    
-        return '<p>The new task was inserted into the database, the ID is %s</p>' %new_id
-    
+        
+        return '<p>The new task was inserted into the database, the ID is %s</p>' % new_id
     else:
         return template('new_task.tpl')
-    ...
+
 
 ``new_task.tpl`` looks like this::
 
@@ -284,7 +284,7 @@ That's all. As you can see, the template is plain HTML this time.
 
 Now we are able to extend our to do list.
 
-By the way, if you prefer to use POST-data: This works exactly the same why, just use ``request.POST.get()`` instead.
+By the way, if you prefer to use POST-data: This works exactly the same way, just use ``request.POST.get()`` instead.
 
 
 .. rubric:: Editing Existing Items
@@ -317,19 +317,19 @@ The code looks like this::
             
             conn = sqlite3.connect('todo.db')
             c = conn.cursor()
-            query = "UPDATE todo SET task = '%s', status = '%s' WHERE id LIKE '%s'" % (edit,status,no)
-            c.execute(query)
+            query = "UPDATE todo SET task=?, status=? WHERE id LIKE ?"
+            c.execute(query, edit, status, no)
             conn.commit()
             
             return '<p>The item number %d was successfully updated</p>' %no
         else:
             conn = sqlite3.connect('todo.db')
             c = conn.cursor()
-            query = "SELECT task, status FROM todo WHERE id LIKE '%d'" %no
-            c.execute(query)
+            query = "SELECT task, status FROM todo WHERE id LIKE ?"
+            c.execute(query, no)
             cur_data = c.fetchone()
             
-            return template('edit_task', old = cur_data, no = no)
+            return template('edit_task', old=cur_data, no=no)
 
 It is basically pretty much the same what we already did above when adding new items, like using ``GET``-data etc. The main addition here is using the dynamic route ``:no``, which here passes the number to the corresponding function. As you can see, ``no`` is used within the function to access the right row of data within the database.
 
@@ -516,7 +516,7 @@ As above the ToDo list example was developed piece by piece, here is the complet
 Main code for the application ``todo.py``::
 
     import sqlite3, os
-    from bottle import route, run, debug, template, request, validate, error
+    from bottle import route, run, debug, template, request, validate, error, default_app
     
     # only needed when you run Bottle on mod_wsgi
     from bottle import default_app
@@ -525,7 +525,7 @@ Main code for the application ``todo.py``::
     def todo_list():
         conn = sqlite3.connect('todo.db')
         c = conn.cursor()
-        c.execute("SELECT id, task FROM todo WHERE status LIKE '1';")
+        c.execute("SELECT id, task FROM todo WHERE status LIKE '1'")
         result = c.fetchall()
         c.close()  
         output = template('make_table', rows=result)
@@ -537,13 +537,13 @@ Main code for the application ``todo.py``::
             new = request.GET.get('task', '').strip()
             conn = sqlite3.connect('todo.db')
             c = conn.cursor()
-            query = "INSERT INTO todo (task,status) VALUES ('%s',1)" %new
-            c.execute(query)
+            query = "INSERT INTO todo (task,status) VALUES (?,1)"
+            c.execute(query, new)
             conn.commit()
             c.execute("SELECT last_insert_rowid()")
             new_id = c.fetchone()[0]
-            c.close 
-            return '<p>The new task was inserted into the database, the ID is %s</p>' %new_id
+            c.close()
+            return '<p>The new task was inserted into the database, the ID is %s</p>' % new_id
         else:
             return template('new_task.tpl')
             
@@ -562,18 +562,17 @@ Main code for the application ``todo.py``::
             
             conn = sqlite3.connect('todo.db')
             c = conn.cursor()
-            query = "UPDATE todo SET task = '%s', status = '%s' WHERE id LIKE '%s'" % (edit,status,no)
-            c.execute(query)
+            query = "UPDATE todo SET task=?, status=? WHERE id LIKE ?"
+            c.execute(query, edit, status, no)
             conn.commit()
-            return '<p>The item number %s was successfully updated</p>' %no
+            return '<p>The item number %s was successfully updated</p>' % no
         else:
             conn = sqlite3.connect('todo.db')
             c = conn.cursor()
             query = "SELECT task FROM todo WHERE id LIKE '%s'" %no
             c.execute(query)
             cur_data = c.fetchone()
-            print cur_data
-            return template('edit_task', old = cur_data, no = no)
+            return template('edit_task', old=cur_data, no=no)
     
     @error(403)
     def mistake403(code):
@@ -613,9 +612,8 @@ Template ``edit_task.tpl``::
     <input type="submit" name="save" value="save">
     </form>
     
-Template ``new_task.tpl``:
+Template ``new_task.tpl``::
 
-    #!html
     %#template for the form for a new task
     <p>Add a new task to the ToDo list:</p>
     <form action="/new" method="GET">
