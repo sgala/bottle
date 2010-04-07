@@ -19,47 +19,47 @@
 
 
 # Tutorial
-This tutorial should give a brief introduction into the [Bottle WSGI Framework][bottle]. The main goal is to be able, after reading through this tutorial, to create a project using Bottle. Within this document, not all abilities will be shown, but at least the main and important ones like routing, utilizing the Bottle template abilities to format output and handling GET / POST parameters.
+Este tutorial sirve de breve introducción a la herramienta WSGI [Bottle][bottle]. El objetivo principal es, tras leer este tutorial, ser capaces de crear un proyecto usando Bottle. Este documento no muestra todas las capacidades, pero sí las principales y más importantes, como las rutas, el uso de las plantillas de Bottle para dar formato a la salida y el manejo de parámetros GET / POST.
 
-To understand the content here, it is not necessary to have a basic knowledge of WSGI, as Bottle tries to keep WSGI away from the user anyway. You should have a fair understanding of the [Python][python] programming language. Furthermore, the example used in the tutorial retrieves and stores data in a SQL databse, so a basic idea about SQL helps, but is not a must to understand the concepts of Bottle. Right here, [SQLite][sqlite] is used. The output of Bottle send to the browser is formated in some examples by the help of HTML. Thus, a basic idea about the common HTML tags does help as well.
+Para entender el contenido no es necesario un conocimiento básido de WSGI, ya que Bottle intenta que apartar WSGI del usuario. Se necesita algún conocimiento del lenguaje de programación [Python][python]. Además, los ejemplos que usaremos recupera y almacena datos de una base de datos SQL, así que una idea básica de SQL ayuda, pero no es estrictamente necesaria para entender los conceptos de Bottle. En este tutorial usaremos [SQLite][sqlite]. La salida que Bottle envía al navegador se formatea usando HTML en algunos ejemplos. Por tanto una idea básica de los elementos comunes de HTML también ayuda.
 
-For the sake of introducing Bottle, the Python code "in between" is kept short, in order to keep the focus. Also all code within the tutorial is working fine, but you may not necessarily use it "in the wild", e.g. on a public web server. In order to do so, you may add e.g. more error handling, protect the database with a password, test and escape the input etc.
+Mantenemos corto el código Python "que hay por medio", para mantener el tutorial centrado en los conceptos de Bottle. Asímismo, todo el código del tutorial funciona, pero no es necesariamente lo que debería hacerse para usarlo "en la selva", es decir, en un servidor web público. Para hacerlo habría que añadir mejor gestión de errores, seguridad, validar y escapar las entradas, etc.
 
-## Goals
-At the end of this tutorial, we will have a simple, web-based ToDo list. The list contains a text (with max 100 characters) and a status (0 for closed, 1 for open) for each item. Through the web-based user interface, open items can be view and edited and new items can be added.
+## Objetivos
+Al acabar este tutorial tendremos un listado de tareas pendientes (ToDo) simple. Cada entrada del listado contiene un texto (con un máximo de 100 caracteres) y un estatus (0 para tareas cerradas, 1 para tareas abiertas). Usando la interfaz de usuario deweb se pueden ver y editar los elementos abiertos, así como añadir nuevos.
 
-During development, all pages will be available on "localhost" only, but later on it will be show how to adapt the application for a "real" server, including how to use with Apache's mod_wsgi.
+Durante el desarrollo las páginas se harán disponibles sólo a *localhost*, pero al final mostramos cómo adaptar la aplicación a condiciones de servidores *reales*, incluyndo el uso de mod_wsgi, de Apache.
 
-Bottle will do the routing and format the output, by the help of templates. The items of the list will be stored inside a SQLite database. Reading and  writing from / the database will be done by Python code.
+Bottle se hará cargo de las rutas y el formado de la salida, usando plantillas. Los elementos de la lista se almacenan en una base de datos SQLite. Usamos código de python para leer y escribir en la base de datos.
 
-We will end up with an application with the following pages and functionality:
+Acabaremos con una aplicación que tendrá las siguientes páginas y funcionalidad:
 
- * start page `http://localhost:8080/todo`
- * adding new items to the list: `http://localhost:8080/new`
- * page for editing items: `http://localhost:8080/edit/:no` 
- * validating data assigned by dynamic routes with the @validate decorator
- * catching errors
+ * Página de inicio `http://localhost:8080/todo`
+ * Añadir nuevos elementos a la lista: `http://localhost:8080/new`
+ * Página para edición de elementos: `http://localhost:8080/edit/:no` 
+ * Usaremos el decorador `@validate` para validar los datos que se pasand a las rutas dinámicas
+ * Captura de errores
 
-## Before We Start...
+## Antes de empezar...
 
-### Install Bottle
+### Instalación de Bottle
 
-Assuming that you have a fairly new installation of Python (version 2.5 or higher), you only need to install Bottle in addition to that. Bottle has no other dependencies than Python itself.
+Asumiendo que tenemos una instalación reciente de Python (versión 2.5 o superior), sólo hace falta añadir Bottle. Bottle no tiene otras dependencias que Python.
 
-You can either manually install Bottle or use Python's easy_install: `easy_install bottle`
+Se puede instalar manualmente Bottle, copiando bottle.py al directorio del proyecto, o usar el comando easy_install así: `easy_install bottle`
 
-### Further Software Necessities
+### Otras necesidates de software
 
-As we use SQLite3 as a database, make sure it is installed. On Linux systems, most distributions have SQLite3 installed by default. SQLite is available for [Windows and MacOS X][sqlite_win] as well.
+Como usamod la base de datos SQLite3, hay que asegurarse de que está instalada. Python 2.5 y superior incluye sqlite3. En sistemas Linux, la mayor parte de las distribuciones tienen sqlite3 instalado por defecto. SQLite se puede encontrar también para [Windows and MacOS X][sqlite_win].
 
-Furthermore, you need [Pysqlite][pysqlite], the Python modules to access SQLite databases. Again, many Linux distributions have the module (often called "python-sqlite3") pre-installed, otherwise just install manually or via `easy_install pysqlite`.
+Si usamos python 2.5 también hace falta [Pysqlite][pysqlite], los módulos python para acceder base de datos SQLite. De nuevos, muchas distribuciones linux los tienen instalados (se suele llamar "python-sqlite3"). Si no es el caso es necesario instalarlo manualmente o vía `easy_install pysqlite`.
 
-*Note*: Many older systems have SQLite2 pre-installed. All examples will work fine with this version, too. You just need to import the corresponding Python module named "sqlite" instead of "sqlite3", as used in the examples below.
+*Nota*: Sistemas viejos pueden tener SQLite2 pre-instalado. Los ejemplos funcionarán bien con esa versión. Pero hace falta importar el módulo python llamado "sqlite" en vez de "sqlite3" en los ejemplos.
 
 
-### Create An SQL Database
+### Creación de una base de datos SQL
 
-First, we need to create the database we use later on. To do so, run SQLite with the command `sqlite3 todo.db`. This will create an empty data base called "todo.db" and you will see the SQLite prompt, which may look like this: `sqlite>`. Right here, input the following commands:
+En primer lugar necesitamos crear la base de datos que usaremos, que guardaremos en `todo.db`. Para hacerlo podemos lanzar SQLite con el comando `sqlite3 todo.db`. Así se crea una base de datos vacía con el nombre "todo.db" y veremos el *prompt* de SQLite, que será parecido a: `sqlite>`. Podemos ahora escribir los siguientes comandos:
 
     #!sql
     CREATE TABLE todo (id INTEGER PRIMARY KEY, task char(100) NOT NULL, status bool NOT NULL);
@@ -68,9 +68,9 @@ First, we need to create the database we use later on. To do so, run SQLite with
     INSERT INTO todo (task,status) VALUES ('Test various editors for and check the syntax highlighting',1);
     INSERT INTO todo (task,status) VALUES ('Choose your favorite WSGI-Framework',0);
 
-The first line generates a tables called "todo" with the three columns "id", "task", and "status". "id" is a unique id for each row, which is used later on to reference the rows. The column "task" holds the text which describes the task, it can be max 100 characters long. Finally, the column "status" is used to mark a task as open (value 1) or closed (value 0).
+La primera línea genera una tabla llamada "todo" con las tres columnas "id", "task", y "status". "id" es un identificador único para cada fila, que usaremos más tarde para referenciar las filas. La columna "task" guarda el texto que describe la tareas, que puede ser de hasta 100 caracteres de largo. Finalmente, la columna "status" se usa para marcar si una tareas está pendiente (valor `1`) o cerrada (valor `0`).
 
-Alternatively, we can create the database using the sqlite version embedded in python since version 2.5. In this way there is no need to install the full sqlite package. Just execute `python` and enter:
+Alternativamente se puede crear la base de datos usando directamente la versión de sqlite embebida en python desde la versión 2.5. Así no hay necesidad de instalar el paquete sqlite completo. Basta ejecutar `python` y escribir:
 
     #!pycon
     >>> import sqlite3
@@ -84,15 +84,17 @@ Alternatively, we can create the database using the sqlite version embedded in p
     ... """
     >>> con.executescript(sql)
 
-## Using Bottle for a web-based ToDo list
+## Uso de Bottle para una lista de tareas pendientes en web
 
-Now it is time to introduce Bottle in order to create a web-based application. But first, we need to look into a basic concept of Bottle: routes.
+Ahora es el momento de presentar cómo se puede usar Bottle para crear una aplicación web. Pero primero necesitamos ver un concepto básico de Bottle: rutas.
 
-### Understanding routes
-Basically, each page visible in the browser is dynamically generate when the page address is called. Thus, there is no static content. That is exactly what is called a "route" within Bottle: a certain address on the server. So, for example, when the page `http://localhost:8080/todo` is called from the browser, Bottle "grabs" the call and checks if there is any (Python) function defined for the route "todo". If so, Bottle will execute the corresponding Python code and return its result.
+### Comprendiendo las rutas
+Básicalmente cada página visible en el navegador se genera dinámicamente cuando se accede a la dirección de la página. En el uso normal de bottle, por tanto, no hay contenido estático.
 
-### First Step - Showing All Open Items
-So, after understanding the concept of routes, let's create the first one. The goal is to see all open items from the ToDo list:
+En Bottle se le llama ruta a una dirección, o recurso, en el servidor. Por ejemplo, cuando se accede a la página `http://localhost:8080/todo` en el navegador, Bottle mira si hay alguna función (Python) asignada a la ruta "/todo". Si ese es el caso Bottle ejecutará el código Python corespondiente y devolverá el resultado que devuelva.
+
+### Primer paso: Mostrar todos los elementos abiertos
+Tras entender el concepto de rutas creeos una. El objetivo es ver todos los elementos abiertos en la lista de tareas pendientes:
 
     #!Python
     import sqlite3
@@ -100,17 +102,17 @@ So, after understanding the concept of routes, let's create the first one. The g
     
     @route('/todo')
     def todo_list():
-        conn = sqlite3.connect('todo.db')
-        c = conn.cursor()
-        c.execute("SELECT id, task FROM todo WHERE status LIKE '1'")
-        result = c.fetchall()
-        return str(result)
+        with sqlite3.connect('todo.db') as conn:
+            c = conn.cursor()
+            c.execute("SELECT id, task FROM todo WHERE status LIKE 1")
+            result = c.fetchall()
+            return str(result)
         
     run()
     
-Save the code a "todo.py", preferable in the same directory as the file "todo.db". Otherwise, you need to add the path to "todo.db" in the `sqlite3.connect()` statement.
+Salve el código a "todo.py", prefirablemente en el mismo directorio que el archivo "todo.db". En caso contrario necesitará añadir el camino a "todo.db" en el argumento a  `sqlite3.connect()`.
 
-Let's have a look what we just did: We imported the necessary module "sqlite3" to access to SQLite database and from Bottle we imported "route" and "run". The `run()` statement simply starts the web server included in Bottle. By default, the web server serves the pages on localhost and port 8080. Furthermore, we imported "route", which is the function responsible for Bottle's routing. As you can see, we defined one function, "todo_list()", with a few lines of code reading from the database. The important point is the [decorator statement][decorator] `@route('/todo')` right before the `def todo_list()` statement. By doing this, we bind this function to the route "/todo", so every time the browsers calls `http://localhost:8080/todo`, Bottle returns the result of the function "todo_list()". That is how routing within bottle works.
+Vamos a ver qué hicimos: hemos importado el módulo "sqlite3", necesario para acceder a una base de datos SQLite, y desde Bottle importamos "route" y "run". La llamada a  `run()` arranca el servidor web incluido en Bottle. Por defecto el servidor web sirve páginas para localhost en el puerto 8080. También importamos "route", que es la función the function responsible for Bottle's routing. As you can see, we defined one function, "todo_list()", with a few lines of code reading from the database. The important point is the [decorator statement][decorator] `@route('/todo')` right before the `def todo_list()` statement. By doing this, we bind this function to the route "/todo", so every time the browsers calls `http://localhost:8080/todo`, Bottle returns the result of the function "todo_list()". That is how routing within bottle works.
 
 Actually you can bind more than one route to a function. So the following code
 
