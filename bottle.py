@@ -232,7 +232,8 @@ class Route(object):
 
     def flat_re(self):
         ''' Return a regexp pattern with non-grouping parentheses '''
-        return re.sub(r'\(\?P<[^>]*>|\((?!\?)', '(?:', self.group_re())
+        rf = lambda m: m.group(0) if len(m.group(1)) % 2 else m.group(1) + '(?:'
+        return re.sub(r'(\\*)(\(\?P<[^>]*>|\((?!\?))', rf, self.group_re())
 
     def format_str(self):
         ''' Return a format string with named fields. '''
@@ -1227,8 +1228,7 @@ class GunicornServer(ServerAdapter):
 
 class AutoServer(ServerAdapter):
     """ Untested. """
-    adapters = [FapwsServer, CherryPyServer, PasteServer,
-                TwistedServer, GunicornServer, WSGIRefServer]
+    adapters = [CherryPyServer, PasteServer, TwistedServer, WSGIRefServer]
     def run(self, handler):
         for sa in self.adapters:
             try:
@@ -1237,7 +1237,7 @@ class AutoServer(ServerAdapter):
                 pass
 
 
-def run(app=None, server=AutoServer, host='127.0.0.1', port=8080,
+def run(app=None, server=WSGIRefServer, host='127.0.0.1', port=8080,
         interval=1, reloader=False, **kargs):
     """ Runs bottle as a web server. """
     app = app if app else default_app()
