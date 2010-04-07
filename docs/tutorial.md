@@ -110,7 +110,7 @@ Tras entender el concepto de rutas creeos una. El objetivo es ver todos los elem
         
     run()
     
-Salve el código a "todo.py", prefirablemente en el mismo directorio que el archivo "todo.db". En caso contrario necesitará añadir el camino a "todo.db" en el argumento a  `sqlite3.connect()`.
+Salve el código a "todo.py", preferiblemente en el mismo directorio que el archivo "todo.db". En caso contrario necesitará añadir el camino a "todo.db" en el argumento a  `sqlite3.connect()`.
 
 Vamos a ver qué hicimos: hemos importado el módulo "sqlite3", necesario para acceder a una base de datos SQLite, y desde Bottle importamos "route" y "run". La llamada a  `run()` arranca el servidor web incluido en Bottle. Por defecto el servidor web sirve páginas para localhost en el puerto 8080. También importamos "route", que es la función the function responsible for Bottle's routing. As you can see, we defined one function, "todo_list()", with a few lines of code reading from the database. The important point is the [decorator statement][decorator] `@route('/todo')` right before the `def todo_list()` statement. By doing this, we bind this function to the route "/todo", so every time the browsers calls `http://localhost:8080/todo`, Bottle returns the result of the function "todo_list()". That is how routing within bottle works.
 
