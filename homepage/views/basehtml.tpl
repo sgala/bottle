@@ -18,6 +18,7 @@
         <li><a href="/">Inicio</a></li>
         <li><a href="/blog">Entradas de Blog</a></li>
         <li><a href="/page/docs_0_7">Documentación</a></li>
+        <li><a href="/docs/">Documentación (en pruebas)</a></li>
         <li><a href="/page/tutorial">Guía de uso</a></li>
         <li><a href="/page/faq">P.U.F. (F.A.Q.)</a></li>
         <li><a href="/page/contact">Contacto</a></li>
