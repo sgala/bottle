@@ -233,7 +233,8 @@ class Route(object):
 
     def flat_re(self):
         ''' Return a regexp pattern with non-grouping parentheses '''
-        return re.sub(r'\(\?P<[^>]*>|\((?!\?)', '(?:', self.group_re())
+        rf = lambda m: m.group(0) if len(m.group(1)) % 2 else m.group(1) + '(?:'
+        return re.sub(r'(\\*)(\(\?P<[^>]*>|\((?!\?))', rf, self.group_re())
 
     def format_str(self):
         ''' Return a format string with named fields. '''
@@ -692,9 +693,9 @@ class Request(threading.local, DictMixin):
                 fb = TextIOWrapper(self.body, encoding='ISO-8859-1')
             else:
                 fb = self.body
-            data = cgi.FieldStorage(fp=fb, environ=save_env)
+            data = cgi.FieldStorage(fp=fb, environ=save_env, keep_blank_values=True)
             self._POST = MultiDict()
-            for item in data.list:
+            for item in data.list or []:
                 self._POST[item.name] = item if item.filename else item.value
         return self._POST
 
