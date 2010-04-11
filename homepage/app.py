@@ -1,5 +1,13 @@
 #!/usr/bin/env python2.6
 # -*- coding: utf-8 -*-
+
+from SocketServer import TCPServer
+import socket
+TCPServer.address_family = socket.AF_INET6
+import BaseHTTPServer
+BaseHTTPServer.BaseHTTPRequestHandler.protocol_version = "HTTP/1.1"
+
+
 from bottle import route, view, response
 import bottle
 import markdown
@@ -132,5 +140,58 @@ def bloglist():
     return dict(posts=posts)
 
 # Start server
-#bottle.debug(True)
-bottle.run(host='0.0.0.0', port=int(sys.argv[1] if len(sys.argv) > 1 else 8080), server=bottle.AutoServer)
+
+app = bottle.app()
+#from paste.gzipper import make_gzip_middleware
+import gzip
+from StringIO import StringIO
+def make_gzip_middleware(app, level=6, min_length=1024):
+    def gzipper(environ, start_response):
+        if 'gzip' not in environ.get('HTTP_ACCEPT_ENCODING', ''):
+            return app(environ, start_response) # noop
+        buf = StringIO()
+        environ['gzipper'] = dict(compressible=False)
+        def my_start_response(status, headers, exc_info=None):
+            environ['gzipper']['start'] = (status, headers, exc_info)
+            for h,v in headers:
+                if h == 'Content-Encoding':
+                    return start_response(status, headers, exc_info)
+            for h,v in headers:
+                if h == 'Content-Type':
+                    if v and (v.startswith('text/') or v.startswith('application/')) \
+                                and 'zip' not in v:
+                        environ['gzipper']['compressible'] = True
+                        return buf.write # a writer for legacy apps (noop)
+            return start_response(status, headers, exc_info)
+        result = app(environ, my_start_response)
+        f = buf
+        compressing = False
+        compressible = environ['gzipper']['compressible']
+        if not compressible:
+                return result
+        for chunk in result:
+            f.write(chunk)
+            if not compressing and buf.tell() > min_length: # compress from now on
+                compressing = True
+                res = buf.getvalue()
+                buf = StringIO()
+                f = gzip.GzipFile(mode='wb', compresslevel=level, fileobj=buf)
+                f.write(res)
+        #TODO close result if hasattr close
+        res = buf.getvalue()
+        status, headers, exc_info = environ['gzipper']['start']
+        if compressing:
+            f.close()
+            res = buf.getvalue()
+            headers = list((k,v) for k,v in headers if k != 'Content-Length')
+            headers += [('Content-Length',str(len(res))),('Content-Encoding','gzip')]
+        start_response(status, headers, exc_info)
+        return [res]
+    return gzipper
+
+app = make_gzip_middleware(app)
+
+
+
+bottle.debug(True)
+bottle.run(host='::', port=int(sys.argv[1] if len(sys.argv) > 1 else 8080), server=bottle.AutoServer, app=app)
