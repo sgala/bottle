@@ -685,16 +685,16 @@ class Request(threading.local, DictMixin):
             Multiple values per key are possible. See MultiDict for details.
         """
         if self._POST is None:
-            save_env = dict() # Build a save environment for cgi
+            safe_env = dict() # Build a safe environment for cgi
             for key in ('REQUEST_METHOD', 'CONTENT_TYPE', 'CONTENT_LENGTH'):
                 if key in self.environ:
-                    save_env[key] = self.environ[key]
-            save_env['QUERY_STRING'] = '' # Without this, sys.argv is called!
+                    safe_env[key] = self.environ[key]
+            safe_env['QUERY_STRING'] = '' # Without this, sys.argv is called!
             if TextIOWrapper:
                 fb = TextIOWrapper(self.body, encoding='ISO-8859-1')
             else:
                 fb = self.body
-            data = cgi.FieldStorage(fp=fb, environ=save_env, keep_blank_values=True)
+            data = cgi.FieldStorage(fp=fb, environ=safe_env, keep_blank_values=True)
             self._POST = MultiDict()
             for item in data.list or []:
                 self._POST[item.name] = item if item.filename else item.value
