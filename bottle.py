@@ -346,7 +346,7 @@ class Bottle(object):
         self.mounts = {}
         self.error_handler = {}
         self.catchall = catchall
-        self.config = dict()
+        self.config = {}
         self.serve = True
         self.castfilter = []
         if autojson and json_dumps:
@@ -419,6 +419,26 @@ class Bottle(object):
                     self.routes.add(route, callback, **kargs)
             return callback
         return wrapper
+
+    def get(self, path=None, method='GET', **kargs):
+        """ Decorator: Bind a function to a GET request path.
+            See :meth:'route' for details. """
+        return self.route(path=path, method=method, **kargs)
+
+    def post(self, path=None, method='POST', **kargs):
+        """ Decorator: Bind a function to a POST request path.
+            See :meth:'route' for details. """
+        return self.route(path=path, method=method, **kargs)
+
+    def put(self, path=None, method='PUT', **kargs):
+        """ Decorator: Bind a function to a PUT request path.
+            See :meth:'route' for details. """
+        return self.route(path=path, method=method, **kargs)
+
+    def delete(self, path=None, method='DELETE', **kargs):
+        """ Decorator: Bind a function to a DELETE request path.
+            See :meth:'route' for details. """
+        return self.route(path=path, method=method, **kargs)
 
     def error(self, code=500):
         """ Decorator: Registrer an output handler for a HTTP error code"""
@@ -515,7 +535,8 @@ class Bottle(object):
     def __call__(self, environ, start_response):
         """ The bottle WSGI-interface. """
         try:
-            request.bind(environ, self)
+            environ['bottle.app'] = self
+            request.bind(environ)
             response.bind(self)
             out = self.handle(request.path, request.method)
             out = self._cast(out, request, response)
@@ -544,62 +565,39 @@ class Request(threading.local, DictMixin):
 
         The Request object wrapps a WSGI environment and can be used as such.
     """
-    def __init__(self, environ=None, app=None):
+    def __init__(self, environ=None, config=None):
         """ Create a new Request instance.
         
             You usually don't do this but use the global `bottle.request`
             instance instead.
-         """
-        self.bind(environ or {}, app)
+        """
+        self.bind(environ or {}, config)
 
-    def bind(self, environ, app=None):
-        """ Bind a new WSGI enviroment and clear out all previously computed
-            attributes.
+    def bind(self, environ, config=None):
+        """ Bind a new WSGI enviroment.
             
             This is done automatically for the global `bottle.request`
             instance on every request.
         """
-        if isinstance(environ, Request): # Recycle already parsed content
-            for key in self.__dict__: #TODO: Test this
-                setattr(self, key, getattr(environ, key))
-            self.app = app
-            return
-        self._GET = self._POST = self._GETPOST = self._COOKIES = None
-        self._body = self._header = None
         self.environ = environ
-        self.app = app
+        self.config = config or {}
         # These attributes are used anyway, so it is ok to compute them here
         self.path = '/' + environ.get('PATH_INFO', '/').lstrip('/')
         self.method = environ.get('REQUEST_METHOD', 'GET').upper()
 
     def copy(self):
         ''' Returns a copy of self '''
-        return Request(self.environ.copy(), self.app)
+        return Request(self.environ.copy(), self.config)
         
-    def path_shift(self, count=1):
-        ''' Shift some levels of PATH_INFO into SCRIPT_NAME and return the
-            moved part. count defaults to 1'''
-        #/a/b/  /c/d  --> 'a','b'  'c','d'
-        if count == 0: return ''
-        pathlist = self.path.strip('/').split('/')
-        scriptlist = self.environ.get('SCRIPT_NAME','/').strip('/').split('/')
-        if pathlist and pathlist[0] == '': pathlist = []
-        if scriptlist and scriptlist[0] == '': scriptlist = []
-        if count > 0 and count <= len(pathlist):
-            moved = pathlist[:count]
-            scriptlist = scriptlist + moved
-            pathlist = pathlist[count:]
-        elif count < 0 and count >= -len(scriptlist):
-            moved = scriptlist[count:]
-            pathlist = moved + pathlist
-            scriptlist = scriptlist[:count]
-        else:
-            empty = 'SCRIPT_NAME' if count < 0 else 'PATH_INFO'
-            raise AssertionError("Cannot shift. Nothing left from %s" % empty)
-        self['PATH_INFO'] = self.path =  '/' + '/'.join(pathlist) \
-                          + ('/' if self.path.endswith('/') and pathlist else '')
-        self['SCRIPT_NAME'] = '/' + '/'.join(scriptlist)
-        return '/'.join(moved)
+    def path_shift(self, shift=1):
+        ''' Shift path fragments from PATH_INFO to SCRIPT_NAME and vice versa.
+
+          :param shift: The number of path fragemts to shift. May be negative to
+            change ths shift direction. (default: 1)
+        '''
+        script_name = self.environ.get('SCRIPT_NAME','/')
+        self['SCRIPT_NAME'], self.path = path_shift(script_name, self.path, shift)
+        self['PATH_INFO'] = self.path
 
     def __getitem__(self, key):
         """ Shortcut for Request.environ.__getitem__ """
@@ -608,6 +606,15 @@ class Request(threading.local, DictMixin):
     def __setitem__(self, key, value):
         """ Shortcut for Request.environ.__setitem__ """
         self.environ[key] = value
+        todelete = []
+        if key in ('PATH_INFO','REQUEST_METHOD'):
+            self.bind(self.environ, self.config)
+        elif key == 'wsgi.input': todelete = ('body','forms','files','params')
+        elif key == 'QUERY_STRING': todelete = ('get','params')
+        elif key.startswith('HTTP_'): todelete = ('headers', 'cookies')
+        for key in todelete:
+            if 'bottle.' + key in self.environ:
+                del self.environ['bottle.' + key]
 
     def keys(self):
         """ Shortcut for Request.environ.keys() """
@@ -651,13 +658,13 @@ class Request(threading.local, DictMixin):
 
             HeaderDict keys are case insensitive str.title()d 
         '''
-        if self._header is None:
-            self._header = HeaderDict()
+        if 'bottle.headers' not in self.environ:
+            header = self.environ['bottle.headers'] = HeaderDict()
             for key, value in self.environ.iteritems():
                 if key.startswith('HTTP_'):
                     key = key[5:].replace('_','-').title()
-                    self._header[key] = value
-        return self._header
+                    header[key] = value
+        return self.environ['bottle.headers']
 
     @property
     def GET(self):
@@ -666,17 +673,17 @@ class Request(threading.local, DictMixin):
             Keys and values are strings. Multiple values per key are possible.
             See MultiDict for details.
         """
-        if self._GET is None:
+        if 'bottle.get' not in self.environ:
             data = parse_qs(self.query_string, keep_blank_values=True)
-            self._GET = MultiDict()
+            get = self.environ['bottle.get'] = MultiDict()
             for key, values in data.iteritems():
                 for value in values:
-                    self._GET[key] = value
-        return self._GET
+                    get[key] = value
+        return self.environ['bottle.get']
 
     @property
     def POST(self):
-        """ The HTTP POST body parsed into a MultiDict.
+        """ Property: The HTTP POST body parsed into a MultiDict.
 
             This supports urlencoded and multipart POST requests. Multipart
             is commonly used for file uploads and may result in some of the
@@ -684,29 +691,46 @@ class Request(threading.local, DictMixin):
 
             Multiple values per key are possible. See MultiDict for details.
         """
-        if self._POST is None:
-            safe_env = dict() # Build a safe environment for cgi
+        if 'bottle.post' not in self.environ:
+            self.environ['bottle.post'] = MultiDict()
+            self.environ['bottle.forms'] = MultiDict()
+            self.environ['bottle.files'] = MultiDict()
+            safe_env = {'QUERY_STRING':''} # Build a safe environment for cgi
             for key in ('REQUEST_METHOD', 'CONTENT_TYPE', 'CONTENT_LENGTH'):
-                if key in self.environ:
-                    safe_env[key] = self.environ[key]
-            safe_env['QUERY_STRING'] = '' # Without this, sys.argv is called!
+                if key in self.environ: safe_env[key] = self.environ[key]
             if TextIOWrapper:
                 fb = TextIOWrapper(self.body, encoding='ISO-8859-1')
             else:
                 fb = self.body
             data = cgi.FieldStorage(fp=fb, environ=safe_env, keep_blank_values=True)
-            self._POST = MultiDict()
             for item in data.list or []:
-                self._POST[item.name] = item if item.filename else item.value
-        return self._POST
+                if item.filename:
+                    self.environ['bottle.post'][item.name] = item
+                    self.environ['bottle.files'][item.name] = item
+                else:
+                    self.environ['bottle.post'][item.name] = item.value
+                    self.environ['bottle.forms'][item.name] = item.value
+        return self.environ['bottle.post']
 
+    @property
+    def forms(self):
+        """ Property: HTTP POST form data parsed into a MultiDict. """
+        if 'bottle.forms' not in self.environ: self.POST
+        return self.environ['bottle.forms']
+
+    @property
+    def files(self):
+        """ Property: HTTP POST file uploads parsed into a MultiDict. """
+        if 'bottle.files' not in self.environ: self.POST
+        return self.environ['bottle.files']
+        
     @property
     def params(self):
         """ A combined MultiDict with POST and GET parameters. """
-        if self._GETPOST is None:
-            self._GETPOST = MultiDict(self.GET)
-            self._GETPOST.update(dict(self.POST))
-        return self._GETPOST
+        if 'bottle.params' not in self.environ:
+            self.environ['bottle.params'] = MultiDict(self.GET)
+            self.environ['bottle.params'].update(dict(self.forms))
+        return self.environ['bottle.params']
 
     @property
     def body(self):
@@ -715,19 +739,20 @@ class Request(threading.local, DictMixin):
             This property returns a copy of the `wsgi.input` stream and should
             be used instead of `environ['wsgi.input']`.
          """
-        if self._body is None:
+        if 'bottle.body' not in self.environ:
             maxread = max(0, self.content_length)
             stream = self.environ['wsgi.input']
-            self._body = BytesIO() if maxread < MEMFILE_MAX else TemporaryFile(mode='w+b')
+            body = BytesIO() if maxread < MEMFILE_MAX else TemporaryFile(mode='w+b')
             while maxread > 0:
                 part = stream.read(min(maxread, MEMFILE_MAX))
                 if not part: #TODO: Wrong content_length. Error? Do nothing?
                     break
-                self._body.write(part)
+                body.write(part)
                 maxread -= len(part)
-            self.environ['wsgi.input'] = self._body
-        self._body.seek(0)
-        return self._body
+            self.environ['wsgi.input'] = body
+            self.environ['bottle.body'] = body
+        self.environ['bottle.body'].seek(0)
+        return self.environ['bottle.body']
 
     @property
     def auth(self): #TODO: Tests and docs. Add support for digest. namedtuple?
@@ -745,39 +770,45 @@ class Request(threading.local, DictMixin):
             Secure cookies are NOT decoded automatically. See
             Request.get_cookie() for details.
         """
-        if self._COOKIES is None:
+        if 'bottle.cookies' not in self.environ:
             raw_dict = SimpleCookie(self.environ.get('HTTP_COOKIE',''))
-            self._COOKIES = {}
+            self.environ['bottle.cookies'] = {}
             for cookie in raw_dict.itervalues():
-                self._COOKIES[cookie.key] = cookie.value
-        return self._COOKIES
+                self.environ['bottle.cookies'][cookie.key] = cookie.value
+        return self.environ['bottle.cookies']
 
-    def get_cookie(self, *args):
+    def get_cookie(self, name, secret=None):
         """ Return the (decoded) value of a cookie. """
-        value = self.COOKIES.get(*args)
-        sec = self.app.config['securecookie.key']
-        dec = cookie_decode(value, sec)
+        value = self.COOKIES.get(name)
+        dec = cookie_decode(value, secret) if secret else None
         return dec or value
+
+    @property
+    def is_ajax(self):
+        ''' True if the request was generated using XMLHttpRequest '''
+        #TODO: write tests
+        return self.header.get('X-Requested-With') == 'XMLHttpRequest'
+
 
 
 class Response(threading.local):
     """ Represents a single HTTP response using thread-local attributes.
     """
 
-    def __init__(self, app=None):
-        self.bind(app)
+    def __init__(self, config=None):
+        self.bind(config)
 
-    def bind(self, app):
+    def bind(self, config=None):
         """ Resets the Response object to its factory defaults. """
         self._COOKIES = None
         self.status = 200
         self.headers = HeaderDict()
         self.content_type = 'text/html; charset=UTF-8'
-        self.app = app
+        self.config = config or {}
 
     def copy(self):
         ''' Returns a copy of self '''
-        copy = Response(self.app)
+        copy = Response(self.config)
         copy.status = self.status
         copy.headers = self.headers.copy()
         copy.content_type = self.content_type
@@ -808,7 +839,7 @@ class Response(threading.local):
             self._COOKIES = SimpleCookie()
         return self._COOKIES
 
-    def set_cookie(self, key, value, **kargs):
+    def set_cookie(self, key, value, secret=None, **kargs):
         """ Add a new cookie with various options.
         
         If the cookie value is not a string, a secure cookie is created.
@@ -818,8 +849,9 @@ class Response(threading.local):
             See http://de.wikipedia.org/wiki/HTTP-Cookie#Aufbau for details
         """
         if not isinstance(value, basestring):
-            sec = self.app.config['securecookie.key']
-            value = cookie_encode(value, sec).decode('ascii') #2to3 hack
+            if not secret:
+                raise TypeError('Cookies must be strings when secret is not set')
+            value = cookie_encode(value, secret).decode('ascii') #2to3 hack
         self.COOKIES[key] = value
         for k, v in kargs.iteritems():
             self.COOKIES[key][k.replace('_', '-')] = v
@@ -1052,7 +1084,35 @@ def yieldroutes(func):
         path += '/:%s' % arg
         yield path
 
+def path_shift(script_name, path_info, shift=1):
+    ''' Shift path fragments from PATH_INFO to SCRIPT_NAME and vice versa.
 
+        :return: The modified paths.
+        :param script_name: The SCRIPT_NAME path.
+        :param script_name: The PATH_INFO path.
+        :param shift: The number of path fragemts to shift. May be negative to
+          change ths shift direction. (default: 1)
+    '''
+    if shift == 0: return script_name, path_info
+    pathlist = path_info.strip('/').split('/')
+    scriptlist = script_name.strip('/').split('/')
+    if pathlist and pathlist[0] == '': pathlist = []
+    if scriptlist and scriptlist[0] == '': scriptlist = []
+    if shift > 0 and shift <= len(pathlist):
+        moved = pathlist[:shift]
+        scriptlist = scriptlist + moved
+        pathlist = pathlist[shift:]
+    elif shift < 0 and shift >= -len(scriptlist):
+        moved = scriptlist[shift:]
+        pathlist = moved + pathlist
+        scriptlist = scriptlist[:shift]
+    else:
+        empty = 'SCRIPT_NAME' if shift < 0 else 'PATH_INFO'
+        raise AssertionError("Cannot shift. Nothing left from %s" % empty)
+    new_script_name = '/' + '/'.join(scriptlist)
+    new_path_info = '/' + '/'.join(pathlist)
+    if path_info.endswith('/') and pathlist: new_path_info += '/'
+    return new_script_name, new_path_info
 
 
 
@@ -1079,32 +1139,15 @@ def validate(**vkargs):
     return decorator
 
 
-def route(*a, **ka):
-    """ Decorator: Bind a route to a callback.
-        The method parameter (default: GET) specifies the HTTP request
-        method to listen to """
-    return app().route(*a, **ka)
-
-get = functools.partial(route, method='GET')
-get.__doc__ = route.__doc__
-
-post = functools.partial(route, method='POST')
-post.__doc__ = route.__doc__.replace('GET','POST')
-
-put = functools.partial(route, method='PUT')
-put.__doc__ = route.__doc__.replace('GET','PUT')
-
-delete = functools.partial(route, method='DELETE')
-delete.__doc__ = route.__doc__.replace('GET','DELETE')
+route  = functools.wraps(Bottle.route)(lambda *a, **ka: app().route(*a, **ka))
+get    = functools.wraps(Bottle.get)(lambda *a, **ka: app().get(*a, **ka))
+post   = functools.wraps(Bottle.post)(lambda *a, **ka: app().post(*a, **ka))
+put    = functools.wraps(Bottle.put)(lambda *a, **ka: app().put(*a, **ka))
+delete = functools.wraps(Bottle.delete)(lambda *a, **ka: app().delete(*a, **ka))
+error  = functools.wraps(Bottle.error)(lambda code: app().error(code))
 
 def default():
     raise DeprecationWarning("Use @error(404) instead.")
-
-def error(code=500):
-    """
-    Decorator for error handler. Same as app().error(code, handler).
-    """
-    return app().error(code)
 
 
 
@@ -1317,7 +1360,7 @@ class BaseTemplate(object):
     settings = {} #used in prepare()
     defaults = {} #used in render()
 
-    def __init__(self, source=None, name=None, lookup=[], encoding='utf8', settings={}):
+    def __init__(self, source=None, name=None, lookup=[], encoding='utf8', **settings):
         """ Create a new template.
         If the source parameter (str or buffer) is missing, the name argument
         is used to guess a template filename. Subclasses can assume that
@@ -1575,16 +1618,13 @@ def template(tpl, template_adapter=SimpleTemplate, **kwargs):
         lookup = kwargs.get('template_lookup', TEMPLATE_PATH)
         if isinstance(tpl, template_adapter):
             TEMPLATES[tpl] = tpl
-            if settings: TEMPLATES[tpl].prepare(settings)
+            if settings: TEMPLATES[tpl].prepare(**settings)
         elif "\n" in tpl or "{" in tpl or "%" in tpl or '$' in tpl:
-            TEMPLATES[tpl] = template_adapter(source=tpl, lookup=lookup, settings=settings)
+            TEMPLATES[tpl] = template_adapter(source=tpl, lookup=lookup, **settings)
         else:
-            TEMPLATES[tpl] = template_adapter(name=tpl, lookup=lookup, settings=settings)
+            TEMPLATES[tpl] = template_adapter(name=tpl, lookup=lookup, **settings)
     if not TEMPLATES[tpl]:
         abort(500, 'Template (%s) not found' % tpl)
-    kwargs['abort'] = abort
-    kwargs['request'] = request
-    kwargs['response'] = response
     return TEMPLATES[tpl].render(**kwargs)
 
 mako_template = functools.partial(template, template_adapter=MakoTemplate)
@@ -1676,7 +1716,6 @@ HTTP_CODES = {
 
 
 ERROR_PAGE_TEMPLATE = SimpleTemplate("""
-%import cgi
 %from bottle import DEBUG, HTTP_CODES, request
 %status_name = HTTP_CODES.get(e.status, 'Unknown').title()
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
@@ -1686,15 +1725,15 @@ ERROR_PAGE_TEMPLATE = SimpleTemplate("""
     </head>
     <body>
         <h1>Error {{e.status}}: {{status_name}}</h1>
-        <p>Sorry, the requested URL <tt>{{cgi.escape(request.url)}}</tt> caused an error:</p>
-        <pre>{{cgi.escape(str(e.output))}}</pre>
+        <p>Sorry, the requested URL <tt>{{request.url}}</tt> caused an error:</p>
+        <pre>{{str(e.output)}}</pre>
         %if DEBUG and e.exception:
           <h2>Exception:</h2>
-          <pre>{{cgi.escape(repr(e.exception))}}</pre>
+          <pre>{{repr(e.exception)}}</pre>
         %end
         %if DEBUG and e.traceback:
           <h2>Traceback:</h2>
-          <pre>{{cgi.escape(e.traceback)}}</pre>
+          <pre>{{e.traceback}}</pre>
         %end
     </body>
 </html>
