@@ -562,7 +562,6 @@ class Bottle(object):
 
 class Request(threading.local, DictMixin):
     """ Represents a single HTTP request using thread-local attributes.
-
         The Request object wrapps a WSGI environment and can be used as such.
     """
     def __init__(self, environ=None, config=None):
@@ -1581,10 +1580,10 @@ class SimpleTemplate(BaseTemplate):
         flush()
         return '\n'.join(codebuffer) + '\n'
 
-    def subtemplate(self, name, stdout, **args):
-        if name not in self.cache:
-            self.cache[name] = self.__class__(name=name, lookup=self.lookup)
-        return self.cache[name].execute(stdout, **args)
+    def subtemplate(self, _name, _stdout, **args):
+        if _name not in self.cache:
+            self.cache[_name] = self.__class__(name=_name, lookup=self.lookup)
+        return self.cache[_name].execute(_stdout, **args)
 
     def execute(self, _stdout, **args):
         env = self.defaults.copy()
