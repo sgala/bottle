@@ -78,6 +78,10 @@ class Page(object):
             return True
         except AttributeError:
             return False
+    @property
+    def check_etag(self):
+        st = os.stat(self.filename)
+        bottle.request.check_etag('"%x-%x"' % (st.st_size, st.st_mtime))
 
 def iter_blogposts():
     for post in glob.glob(os.path.join(Page.pagedir, '*.md')):
@@ -110,6 +114,7 @@ def static(filename):
 def page(name='start'):
     p = Page(name) #replace('/','_')? Routes don't match '/' so this is save
     if p.exists:
+        p.check_etag
         return dict(page=p)
     else:
         raise bottle.HTTPError(404, 'Page not found') # raise to escape the view...

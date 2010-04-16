@@ -788,6 +788,26 @@ class Request(threading.local, DictMixin):
         #TODO: write tests
         return self.header.get('X-Requested-With') == 'XMLHttpRequest'
 
+    def check_mtime(self, mtime):
+        '''Raise a 304 Redirect if the requested resource is compatible with mtime.
+           Else, add a Last-Modified header with the checked time.'''
+        lm = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(mtime))
+        header = {'Last-Modified':lm}
+        ims = self.environ.get('HTTP_IF_MODIFIED_SINCE')
+        if ims:
+            ims = ims.split(";")[0].strip() # IE sends "<date>; length=146"
+            ims = parse_date(ims)
+            if ims is not None and ims >= int(mtime):
+                raise HTTPResponse(status=304, header=header)
+        response.headers.update(header)
+
+    def check_etag(self, etag):
+        '''Set Etag header. Raise a 304 Redirect if If-None-Match fits.'''
+        header={'Etag':etag}
+        inm = self.environ.get('HTTP_IF_NONE_MATCH')
+        if inm and inm == etag:
+            raise HTTPResponse(status=304, header=header)
+        response.headers.update(header)
 
 
 class Response(threading.local):
@@ -985,14 +1005,8 @@ def static_file(filename, root, guessmime=True, mimetype=None, download=False):
         header['Content-Disposition'] = 'attachment; filename="%s"' % download
 
     stats = os.stat(filename)
-    lm = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(stats.st_mtime))
-    header['Last-Modified'] = lm
-    ims = request.environ.get('HTTP_IF_MODIFIED_SINCE')
-    if ims:
-        ims = ims.split(";")[0].strip() # IE sends "<date>; length=146"
-        ims = parse_date(ims)
-        if ims is not None and ims >= int(stats.st_mtime):
-           return HTTPResponse(status=304, header=header)
+    request.check_etag('"%x-%x"' % (stats.st_size, stats.st_mtime))
+    request.check_mtime(stats.st_mtime)
     header['Content-Length'] = stats.st_size
     if request.method == 'HEAD':
         return HTTPResponse('', header=header)
