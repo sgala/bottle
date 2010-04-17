@@ -334,7 +334,7 @@ or a list of strings.
     @route('/upload', method='POST')
     def do_upload():
         datafile = request.POST.get('datafile')
-        return datafile.read()
+        return datafile.file.read()
 
 
 

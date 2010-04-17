@@ -300,7 +300,7 @@ Bottle maneja la subida de ficheros de forma similar a los datos de formularios 
     @route('/upload', method='POST')
     def do_upload():
         datafile = request.POST.get('datafile')
-        return datafile.read()
+        return datafile.file.read()
 
 El siguiente formulario HTML se puede usar para subir ficheros en combinación con el manejador del ejemplo anterior:
 
