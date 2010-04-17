@@ -303,7 +303,7 @@ Bottle handles file uploads similar to normal POST form data. Instead of strings
     @route('/upload', method='POST')
     def do_upload():
         datafile = request.POST.get('datafile')
-        return datafile.read()
+        return datafile.file.read()
 
 Here is an example HTML Form for file uploads
 
