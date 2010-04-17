@@ -145,11 +145,23 @@ app = bottle.app()
 #from paste.gzipper import make_gzip_middleware
 import gzip
 from StringIO import StringIO
-def make_gzip_middleware(app, level=6, min_length=1024):
+def make_gzip_middleware(app, level=6):
     def gzipper(environ, start_response):
-        if 'gzip' not in environ.get('HTTP_ACCEPT_ENCODING', ''):
-            return app(environ, start_response) # noop
+        def send_headers(size):
+            status, headers, exc_info = environ['gzipper']['start']
+            # Keep dummy content-lenght to trick Paste to keep conn open
+            # a MUST NOT (rfc2616). Server MUST ignore it, though
+            headers = list((k,v) for k,v in headers if k != 'Content-Length')
+            headers += [('Transfer-Encoding', 'chunked'),
+                        ('Connection','keep-alive'),
+                        ('Content-Encoding' , 'gzip')]
+            start_response(status, headers, exc_info)
+        if 'gzip' not in environ.get('HTTP_ACCEPT_ENCODING', ''): # TBD or HTTP/1.0 
+            for i in app(environ, start_response):
+                yield i  # noop
+            return
         buf = StringIO()
+        f = gzip.GzipFile(mode='wb', compresslevel=level, fileobj=buf)
         environ['gzipper'] = dict(compressible=False)
         def my_start_response(status, headers, exc_info=None):
             environ['gzipper']['start'] = (status, headers, exc_info)
@@ -164,34 +176,40 @@ def make_gzip_middleware(app, level=6, min_length=1024):
                         return buf.write # a writer for legacy apps (noop)
             return start_response(status, headers, exc_info)
         result = app(environ, my_start_response)
-        f = buf
-        compressing = False
         compressible = environ['gzipper']['compressible']
         if not compressible:
-                return result
-        for chunk in result:
-            f.write(chunk)
-            if not compressing and buf.tell() > min_length: # compress from now on
-                compressing = True
-                res = buf.getvalue()
-                buf = StringIO()
-                f = gzip.GzipFile(mode='wb', compresslevel=level, fileobj=buf)
-                f.write(res)
+                for i in result:
+                    yield i
+                return
+        sent_headers = False
+        chunked = 0
+        for i in result:
+            f.write(i)
+            if buf.tell()>chunked:
+                if not sent_headers:
+                    sent_headers = True
+                    send_headers(buf.tell())
+                #send a chunk
+                #f.flush()
+                print "chunk: %x" % (buf.tell()-chunked,), len(buf.getvalue())
+                yield '%x\r\n%s\r\n' % (buf.tell()-chunked, buf.getvalue()[chunked:buf.tell()])
+                chunked = buf.tell()
         #TODO close result if hasattr close
-        res = buf.getvalue()
-        status, headers, exc_info = environ['gzipper']['start']
-        if compressing:
-            f.close()
-            res = buf.getvalue()
-            headers = list((k,v) for k,v in headers if k != 'Content-Length')
-            headers += [('Content-Length',str(len(res))),('Content-Encoding','gzip')]
-        start_response(status, headers, exc_info)
-        return [res]
+        f.flush()
+        f.close()
+        if not sent_headers:
+            sent_headers = True
+            send_headers(buf.tell())
+        # send chunk after flush (if there was content only)
+        if f.tell()>0 and buf.tell()>chunked:
+            print "chunk2:",buf.tell()-chunked
+            yield '%x\r\n%s\r\n' % (buf.tell()-chunked, buf.getvalue()[chunked:buf.tell()])
+        # send last zero sized chunk
+        yield '0\r\n\r\n'
+        return
     return gzipper
 
 app = make_gzip_middleware(app)
-
-
 
 bottle.debug(True)
 bottle.run(host='::', port=int(sys.argv[1] if len(sys.argv) > 1 else 8080), server=bottle.AutoServer, app=app)
