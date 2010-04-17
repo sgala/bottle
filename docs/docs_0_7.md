@@ -293,7 +293,11 @@ Se puede usar `.getall(key)` para recuperar todos los valores, o bien `.get(key[
 
 ## Subida de ficheros
 
-Bottle maneja la subida de ficheros de forma similar a los datos de formularios POST. En lugar de una cadena, se encontrará un objeto parecido a un fichero. 
+Bottle maneja la subida de ficheros de forma similar a los datos de
+formularios POST. En lugar de una cadena, se encontrará un objeto
+parecido a un fichero, que tiene dos atributos: `file` es un fichero
+que se puede usar para leer su contenido, y `value`, que lo leerá
+entero en memoria y lo devolverá como una cadena.
 
     #!Python
     from bottle import route, request
