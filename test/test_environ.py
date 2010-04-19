@@ -68,8 +68,6 @@ class TestEnviron(unittest.TestCase):
         del request['PATH_INFO']
         self.assertTrue('PATH_INFO' not in request)
 
-
-
     def test_header_access(self):
         """ Environ: Request objects decode headers """
         e = {}
