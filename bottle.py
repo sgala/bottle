@@ -615,6 +615,18 @@ class Request(threading.local, DictMixin):
             if 'bottle.' + key in self.environ:
                 del self.environ['bottle.' + key]
 
+    def __delitem__(self, key):
+        """ Shortcut for Request.environ.__delitem__ """
+        del(self.environ[key])
+
+    def __iter__(self):
+        """ Shortcut for Request.environ.__iter__ """
+        return iter(self.environ)
+
+    def __len__(self):
+        """ Shortcut for Request.environ.__len__ """
+        return len(self.environ)
+
     def keys(self):
         """ Shortcut for Request.environ.keys() """
         return self.environ.keys()
