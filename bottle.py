@@ -338,7 +338,7 @@ class Router(object):
 class Bottle(object):
     """ WSGI application """
 
-    def __init__(self, catchall=True, autojson=True, path = ''):
+    def __init__(self, catchall=True, autojson=True, config=None):
         """ Create a new bottle instance.
             You usually don't do that. Use `bottle.app.push()` instead.
         """
@@ -346,7 +346,7 @@ class Bottle(object):
         self.mounts = {}
         self.error_handler = {}
         self.catchall = catchall
-        self.config = {}
+        self.config = config or {}
         self.serve = True
         self.castfilter = []
         if autojson and json_dumps:
@@ -598,10 +598,11 @@ class Request(threading.local, DictMixin):
         self['SCRIPT_NAME'], self.path = path_shift(script_name, self.path, shift)
         self['PATH_INFO'] = self.path
 
-    def __getitem__(self, key):
-        """ Shortcut for Request.environ.__getitem__ """
-        return self.environ[key]
-
+    def __getitem__(self, key): return self.environ[key]
+    def __delitem__(self, key): self[key] = ""; del(self.environ[key])
+    def __iter__(self): return iter(self.environ)
+    def __len__(self): return len(self.environ)
+    def keys(self): return self.environ.keys()
     def __setitem__(self, key, value):
         """ Shortcut for Request.environ.__setitem__ """
         self.environ[key] = value
@@ -614,22 +615,6 @@ class Request(threading.local, DictMixin):
         for key in todelete:
             if 'bottle.' + key in self.environ:
                 del self.environ['bottle.' + key]
-
-    def __delitem__(self, key):
-        """ Shortcut for Request.environ.__delitem__ """
-        del(self.environ[key])
-
-    def __iter__(self):
-        """ Shortcut for Request.environ.__iter__ """
-        return iter(self.environ)
-
-    def __len__(self):
-        """ Shortcut for Request.environ.__len__ """
-        return len(self.environ)
-
-    def keys(self):
-        """ Shortcut for Request.environ.keys() """
-        return self.environ.keys()
 
     @property
     def query_string(self):
@@ -1011,13 +996,10 @@ def static_file(filename, root, guessmime=True, mimetype=None, download=False):
     else:
         return HTTPResponse(open(filename, 'rb'), header=header)
 
-def url(routename, **kargs):
-    return app().get_url(routename, **kargs)
-url.__doc__ = Bottle.get_url.__doc__
 
-def mount(app, script_path):
-    return app().mount(app, script_path)
-mount.__doc__ = Bottle.mount.__doc__
+
+
+
 
 # Utilities
 
@@ -1155,7 +1137,9 @@ get    = functools.wraps(Bottle.get)(lambda *a, **ka: app().get(*a, **ka))
 post   = functools.wraps(Bottle.post)(lambda *a, **ka: app().post(*a, **ka))
 put    = functools.wraps(Bottle.put)(lambda *a, **ka: app().put(*a, **ka))
 delete = functools.wraps(Bottle.delete)(lambda *a, **ka: app().delete(*a, **ka))
-error  = functools.wraps(Bottle.error)(lambda code: app().error(code))
+error  = functools.wraps(Bottle.error)(lambda *a, **ka: app().error(*a, **ka))
+url    = functools.wraps(Bottle.get_url)(lambda *a, **ka: app().get_url(*a, **ka))
+mount  = functools.wraps(Bottle.get_url)(lambda *a, **ka: app().mount(*a, **ka))
 
 def default():
     raise DeprecationWarning("Use @error(404) instead.")
@@ -1279,7 +1263,14 @@ class GunicornServer(ServerAdapter):
     def run(self, handler):
         import gunicorn.arbiter
         gunicorn.arbiter.Arbiter((self.host, self.port), 4, handler).run()
+    
 
+class EventletServer(ServerAdapter):
+    """ Untested """
+    def run(self, handler):
+        from eventlet import wsgi, listen
+        wsgi.server(listen((self.host, self.port)), handler)
+        
 
 class AutoServer(ServerAdapter):
     """ Untested. """
