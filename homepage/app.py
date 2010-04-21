@@ -210,4 +210,4 @@ def make_gzip_middleware(app, level=6):
 app = make_gzip_middleware(app)
 
 bottle.debug(True)
-bottle.run(host='0.0.0.0', port=int(sys.argv[1] if len(sys.argv) > 1 else 8080), server=bottle.AutoServer, app=app, protocol_version='HTTP/1.1')
+bottle.run(host='::', port=int(sys.argv[1] if len(sys.argv) > 1 else 8080), server=bottle.AutoServer, app=app, protocol_version='HTTP/1.1')
