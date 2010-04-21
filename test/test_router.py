@@ -8,7 +8,6 @@ class TestRouter(unittest.TestCase):
     def testBasic(self):
         add = self.r.add
         match = self.r.match
-        named = self.r.named
         def basic(spec, handler, url, bindings):
             route = bottle.Route(spec, handler)
             add(route)
@@ -24,7 +23,6 @@ class TestRouter(unittest.TestCase):
     def testParentheses(self):
         add = self.r.add
         match = self.r.match
-        named = self.r.named
         def basic(spec, handler, url, bindings, fit=True):
             route = bottle.Route(spec, handler)
             add(route)
