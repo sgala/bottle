@@ -153,10 +153,10 @@ def make_gzip_middleware(app, level=6):
             # a MUST NOT (rfc2616). Server MUST ignore it, though
             headers = list((k,v) for k,v in headers if k != 'Content-Length')
             headers += [('Transfer-Encoding', 'chunked'),
-                        ('Connection','keep-alive'),
                         ('Content-Encoding' , 'gzip')]
             start_response(status, headers, exc_info)
-        if 'gzip' not in environ.get('HTTP_ACCEPT_ENCODING', ''): # TBD or HTTP/1.0 
+        if 'gzip' not in environ.get('HTTP_ACCEPT_ENCODING', '') \
+              or environ.get('SERVER_PROTOCOL','HTTP/1.0')[5:] < '1.1': 
             for i in app(environ, start_response):
                 yield i  # noop
             return
@@ -191,7 +191,6 @@ def make_gzip_middleware(app, level=6):
                     send_headers(buf.tell())
                 #send a chunk
                 #f.flush()
-                print "chunk: %x" % (buf.tell()-chunked,), len(buf.getvalue())
                 yield '%x\r\n%s\r\n' % (buf.tell()-chunked, buf.getvalue()[chunked:buf.tell()])
                 chunked = buf.tell()
         #TODO close result if hasattr close
@@ -202,7 +201,6 @@ def make_gzip_middleware(app, level=6):
             send_headers(buf.tell())
         # send chunk after flush (if there was content only)
         if f.tell()>0 and buf.tell()>chunked:
-            print "chunk2:",buf.tell()-chunked
             yield '%x\r\n%s\r\n' % (buf.tell()-chunked, buf.getvalue()[chunked:buf.tell()])
         # send last zero sized chunk
         yield '0\r\n\r\n'
@@ -212,4 +210,4 @@ def make_gzip_middleware(app, level=6):
 app = make_gzip_middleware(app)
 
 bottle.debug(True)
-bottle.run(host='::', port=int(sys.argv[1] if len(sys.argv) > 1 else 8080), server=bottle.AutoServer, app=app)
+bottle.run(host='0.0.0.0', port=int(sys.argv[1] if len(sys.argv) > 1 else 8080), server=bottle.AutoServer, app=app, protocol_version='HTTP/1.1')
