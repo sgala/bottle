@@ -188,7 +188,7 @@ class Route(object):
     syntax = re.compile(r'(.*?)(?<!\\):([a-zA-Z_]+)?(?:#(.*?)#)?')
     default = '[^/]+'
 
-    def __init__(self, route, target, name=None, static=False):
+    def __init__(self, route, target, name=None, static=False, ct=None):
         """ Create a Route. The route string may contain `:key`,
             `:key#regexp#` or `:#regexp#` tokens for each dynamic part of the
             route. These can be escaped with a backslash infront of the `:`
@@ -200,6 +200,7 @@ class Route(object):
         self.name = name
         self._static = static
         self._tokens = None
+        self.ct = ct
 
     def tokens(self):
         """ Return a list of (type, value) tokens. """
@@ -264,10 +265,12 @@ class Route(object):
         return self.route
 
     def __eq__(self, other):
-        return self.route == other.route\
+        return isinstance(other, type(self))\
+           and self.route == other.route\
            and self.static == other.static\
            and self.name == other.name\
-           and self.target == other.target
+           and self.target == other.target\
+           and self.ct == other.ct
 
 
 class Router(object):
@@ -290,9 +293,9 @@ class Router(object):
         route = a[0] if a and isinstance(a[0], Route) else Route(*a, **ka)
         self.routes.append(route)
         if route.name:
-            self.named[route.name] = route.format_str()
+            self.named[route.name] = route
         if route.static:
-            self.static[route.route] = route.target
+            self.static[route.route] = route
             return
         gpatt = route.group_re()
         fpatt = route.flat_re()
@@ -300,9 +303,9 @@ class Router(object):
             gregexp = re.compile('^(%s)$' % gpatt) if '(?P' in gpatt else None
             combined = '%s|(^%s$)' % (self.dynamic[-1][0].pattern, fpatt)
             self.dynamic[-1] = (re.compile(combined), self.dynamic[-1][1])
-            self.dynamic[-1][1].append((route.target, gregexp))
+            self.dynamic[-1][1].append((route, gregexp))
         except (AssertionError, IndexError), e: # AssertionError: Too many groups
-            self.dynamic.append((re.compile('(^%s$)'%fpatt),[(route.target, gregexp)]))
+            self.dynamic.append((re.compile('(^%s$)'%fpatt),[(route, gregexp)]))
         except re.error, e:
             raise RouteSyntaxError("Could not add Route: %s (%s)" % (route, e))
 
@@ -321,7 +324,7 @@ class Router(object):
     def build(self, route_name, **args):
         ''' Builds an URL out of a named route and some parameters.'''
         try:
-            return self.named[route_name] % args
+            return self.named[route_name].format_str() % args
         except KeyError:
             raise RouteBuildError("No route found with name '%s'." % route_name)
 
@@ -454,12 +457,13 @@ class Bottle(object):
         if not self.serve:
             return HTTPError(503, "Server stopped")
 
-        handler, args = self.match_url(url, method)
-        if not handler:
+        route, args = self.match_url(url, method)
+        if not route:
             return HTTPError(404, "Not found:" + url)
 
         try:
-            return handler(**args)
+            if route.ct: response.content_type = route.ct
+            return route.target(**args)
         except HTTPResponse, e:
             return e
         except Exception, e:

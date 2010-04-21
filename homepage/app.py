@@ -104,8 +104,8 @@ def static(filename):
 
 # Bottle Pages
 
-@route('/')
-@route('/page/:name')
+@route('/', ct='text/html')
+@route('/page/:name', ct='text/html')
 @view('page')
 def page(name='start'):
     p = Page(name) #replace('/','_')? Routes don't match '/' so this is save
@@ -115,10 +115,9 @@ def page(name='start'):
         raise bottle.HTTPError(404, 'Page not found') # raise to escape the view...
 
 
-@route('/rss.xml')
+@route('/rss.xml', ct='xml/rss')
 @view('rss')
 def blogrss():
-    response.content_type = 'xml/rss'
     posts = [post for post in iter_blogposts() if post.exists and post.is_blogpost]
     posts.sort(key=lambda x: x.blogtime, reverse=True)
     return dict(posts=posts)

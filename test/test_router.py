@@ -8,31 +8,35 @@ class TestRouter(unittest.TestCase):
     def testBasic(self):
         add = self.r.add
         match = self.r.match
-        add('/static', 'static')
-        self.assertEqual(('static', {}), match('/static'))
-        add('/\\:its/:#.+#/:test/:name#[a-z]+#/', 'handler')
-        self.assertEqual(('handler', {'test': 'cruel', 'name': 'world'}), match('/:its/a/cruel/world/'))
-        add('/:test', 'notail')
-        self.assertEqual(('notail', {'test': 'test'}), match('/test'))
-        add(':test/', 'nohead')
-        self.assertEqual(('nohead', {'test': 'test'}), match('test/'))
-        add(':test', 'fullmatch')
-        self.assertEqual(('fullmatch', {'test': 'test'}), match('test'))
-        add('/:#anon#/match', 'anon')
-        self.assertEqual(('anon', {}), match('/anon/match'))
+        named = self.r.named
+        def basic(spec, handler, url, bindings):
+            route = bottle.Route(spec, handler)
+            add(route)
+            self.assertEqual((route, bindings), match(url))
+        basic('/static', 'static', '/static', {})
+        basic('/\\:its/:#.+#/:test/:name#[a-z]+#/', 'handler', '/:its/a/cruel/world/', {'test': 'cruel', 'name': 'world'})
+        basic('/:test', 'notail', '/test', {'test': 'test'})
+        basic(':test/', 'nohead', 'test/', {'test': 'test'})
+        basic(':test', 'fullmatch', 'test', {'test': 'test'})
+        basic('/:#anon#/match', 'anon', '/anon/match', {})
         self.assertEqual((None, {}), match('//no/m/at/ch/'))
 
     def testParentheses(self):
         add = self.r.add
         match = self.r.match
-        add('/func(:param)', 'func')
-        self.assertEqual(('func', {'param':'foo'}), match('/func(foo)'))
-        add('/func2(:param#(foo|bar)#)', 'func2')
-        self.assertEqual(('func2', {'param':'foo'}), match('/func2(foo)'))
-        self.assertEqual(('func2', {'param':'bar'}), match('/func2(bar)'))
-        self.assertEqual((None, {}),                match('/func2(baz)'))        
-        add('/groups/:param#(foo|bar)#', 'groups')
-        self.assertEqual(('groups', {'param':'foo'}), match('/groups/foo'))
+        named = self.r.named
+        def basic(spec, handler, url, bindings, fit=True):
+            route = bottle.Route(spec, handler)
+            add(route)
+            if fit:
+                self.assertEqual((route, bindings), match(url))
+            else:
+                self.assertEqual((None, {}), match(url))
+        basic('/func(:param)', 'func', '/func(foo)', {'param':'foo'})
+        basic('/func2(:param#(foo|bar)#)', 'func2', '/func2(foo)', {'param':'foo'})
+        basic('/func2(:param#(foo|bar)#)', 'func2', '/func2(bar)', {'param':'bar'})
+        basic('/func2(:param#(foo|bar)#)', 'func2', '/func2(baz)', {}, fit=False)
+        basic('/groups/:param#(foo|bar)#', 'groups', '/groups/foo', {'param':'foo'})
 
     def testErrorInPattern(self):
         self.assertRaises(bottle.RouteSyntaxError, self.r.add, '/:bug#(#/', 'buggy')
