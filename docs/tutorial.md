@@ -50,7 +50,7 @@ Se puede instalar manualmente Bottle, copiando bottle.py al directorio del proye
 
 ### Otras necesidates de software
 
-Como usamod la base de datos SQLite3, hay que asegurarse de que está instalada. Python 2.5 y superior incluye sqlite3. En sistemas Linux, la mayor parte de las distribuciones tienen sqlite3 instalado por defecto. SQLite se puede encontrar también para [Windows and MacOS X][sqlite_win].
+Como usamos la base de datos SQLite3, hay que asegurarse de que está instalada. Python 2.5 y superior incluye sqlite3. En sistemas Linux, la mayor parte de las distribuciones tienen sqlite3 instalado por defecto. SQLite se puede encontrar también para [Windows and MacOS X][sqlite_win].
 
 Si usamos python 2.5 también hace falta [Pysqlite][pysqlite], los módulos python para acceder base de datos SQLite. De nuevos, muchas distribuciones linux los tienen instalados (se suele llamar "python-sqlite3"). Si no es el caso es necesario instalarlo manualmente o vía `easy_install pysqlite`.
 
@@ -113,9 +113,9 @@ Tras entender el concepto de rutas creeos una. El objetivo es ver todos los elem
     
 Salve el código a "todo.py", preferiblemente en el mismo directorio que el archivo "todo.db". En caso contrario necesitará añadir el camino a "todo.db" en el argumento a  `sqlite3.connect()`.
 
-Vamos a ver qué hicimos: hemos importado el módulo "sqlite3", necesario para acceder a una base de datos SQLite, y desde Bottle importamos "route" y "run". La llamada a  `run()` arranca el servidor web incluido en Bottle. Por defecto el servidor web sirve páginas para localhost en el puerto 8080. También importamos "route", que es la función the function responsible for Bottle's routing. As you can see, we defined one function, "todo_list()", with a few lines of code reading from the database. The important point is the [decorator statement][decorator] `@route('/todo')` right before the `def todo_list()` statement. By doing this, we bind this function to the route "/todo", so every time the browsers calls `http://localhost:8080/todo`, Bottle returns the result of the function "todo_list()". That is how routing within bottle works.
+Vamos a ver qué hicimos: hemos importado el módulo "sqlite3", necesario para acceder a una base de datos SQLite, y desde Bottle importamos "route" y "run". La llamada a `run()` arranca el servidor web incluido en Bottle. Por defecto el servidor web sirve páginas para localhost en el puerto 8080. También importamos "route", que es la función responsable de las rutas de Bottle. Como se puede ver hemos definido una función, `todo_list()`, con unas líneas de código que leen de la base de datos. La parte importante es la [sentencia decoradora][decorator] `@route('/todo')` justo antes de la línea `def todo_list()`. Haciendo eso enlazamos esa función a la ruta `/todo`, para que cada vez que un navegador accede a `http://localhost:8080/todo`, Bottle devuelva el resultado de la función `todo_list()`. Así funcionan las rutas de bottle.
 
-Actually you can bind more than one route to a function. So the following code
+De hecho se puede enlazar más de una ruta a una función. Así que el código siguiente
 
     #!Python
     ...
@@ -124,50 +124,50 @@ Actually you can bind more than one route to a function. So the following code
     def todo_list():
         ...
         
-will work fine, too. What will not work is to bind one route to more than one function.
+también funciona bien. Lo que no funciona es enlazar una ruta a más de una función.
 
-What you will see in the browser is what is returned, thus the value given by the `return` statement. In this example, we need to convert "result" in to a string by `str()`, as Bottle expects a string or a list of strings from the return statement. But here, the result of the database query is a list of tuples, which is the standard defined by the [Python DB API][py_db_api].
+El navegador muestra lo que devolvamos, por tanto el valor de la sentencia `return`. En este ejemplo necesitamos convertir `result` en una cadena usando `str()`, ya que Bottle espera que se devuelva una cadena o una lista de cadenas. Pero el resultado de la petición a la base de datos es una lista de tuplas, que es el estándar que define la [API de Base de Datoa de python][py_db_api].
 
-Now, after understanding the little script above, it is time to execute it and watch the result yourself. Remember that on Linux- / Unix-based systems the file "todo.py" need to be executable first. Then, just run `python todo.py` and call the page `http://localhost:8080/todo` in your browser. In case you made no mistake writing the script, the output should look like this:
+Ahora que comprendemos el pequeño *script* de arriba es el momento de ejecutarlo y ver nosotros mismos el resultado.. En los sistemas operativos basados en Linux/Unix el archivo `todo.py` necesita hacerse ejecutable o, si no, ejecutar `python todo.py`. Luego podremos cargar la página `http://localhost:8080/todo` en el navegador. Si no cometimos ningún error en el script, la salida será parecida a:
 
     #!Python
     [(2, u'Visit the Python website'), (3, u'Test various editors for and check the syntax highlighting')]
     
-If so - congratulations! You are now a successful user of Bottle. In case it did not work and you need to make some changes to the script, remember to stop Bottle serving the page, otherwise the revised version will not be loaded.
+Si es así ¡felicidades! Ya es usted un usuario de Bottle. Si no funcionó y necesite cambiar algunas cosas en el script, recuerde detener el servidor de Bottle que sirve la página, en caso contrario no cargará la nueva versión.
 
-Actually, the output is not really exciting nor nice to read. It is the raw result returned from the SQL-Query.
+De hecho la salida no es demasiado interesante, ni agradable de leer. Es el resultado de la petición SQL, exactamente como llegó.
 
-So, in the next step we format the output in a nicer way. But before we do that, we make our life easier.
+Nuestro siguiente paso será darle un formato mejor a la salida. Pero antes de hacerlo vamos a hacernos la vida un poco más fácil.
 
-### Debugging and Auto-Reload
-Maybe you already experienced the Bottle sends a short error message to the browser in case something within the script is wrong, e.g. the connection to the database is not working. For debugging purposes it is quite helpful to get more details. This can be easily achieved by adding the following statement to the script:
+### Depuración y auto-recarga
+Quizá ya haya experimentado que Bottle envía un mensaje de error corto al navegador en caso de que algo vaya mal en el *script*, por ejemplo si la conexión a la base de datos tiene algún problema. Para depuración ayuda mucho tener más detalles. Se puede conseguir fácilmente añadiendo al *script* la siguiente sentencia:
 
     #!Python
     from bottle import run, route, debug
     ...
-    #add this at the very end:
+    #añada esto al final:
     debug(True)
     run()
 
-By enabling "debug", you will get a full stacktrace of the Python interpreter, which usually contains useful information for finding bugs. Furthermore, templates (see below) are not cached, thus changes to template will take effect without stopping the server.
+Llamando a la función `debug` se consigue que bottle imprima una traza de la pila del intérprete de python, que normalmente contiene información útil para encontrar errores. Además, así bottle recargará las plantillas (ver más abajo) en cada petición, de manera que podremos ver los cambios en las plantillas sin tener que detener el servidor.
 
-**Note** that `debug(True)` is supposed to be used for development only, it should *not* be used in productive environments.
+**Nota**: `debug(True)` se debe usar sólo para desarrollo, **nunca** debe usarse en entornos de producción.
 
-A further quite nice feature is auto-reloading, which is enabled by modifying the `run()` statement to
+Otra característica interesante es la auto-recarga, que se habilita modificando la sentencia `run()` así
 
     #!Python
     run(reloader=True)
     
-This will automatically detect changes to the script and reload the new version once it is called again, without the need to stop and start the server.
+De esta manera se detectan automáticamente los cambios del *script* y se recarga la versión nueva sin necesidad de parar y arrancar el servidor.
 
-Again, the feature is mainly supposed to be used while development, not on productive systems.
+Lo mismo que las trazas, esta característica está pensada para usarse durante el desarrollo, no en sistemas en producción.
 
-### Bottle Template To Format The Output
-Now let's have a look to cast the output of the script into a proper format.
+### Plantillas de Bottle para dar formato a la salida
+Vamos ahora a considerar maneras de darle un formato adecuado a la salida que produce el *script*.
 
-Actually Bottle expects to receive a string or a list of strings from a function and returns them by the help of the build-in server to the browser. Bottle does not bother about the content of the string itself, so it can be text formated with HTML markup, too.
+Bottle espera recibir una cadena o una lista de cadenas de caracteres de los manejadores, y los devuelve al navegador con ayuda del servidor incluido. A bottle no le importa el contenido de la cadena, que puede ser texto formateado con marcado HTML.
 
-Bottle brings its own easy-to-use template engine with it. Templates are stored as separate files having a ".tpl" extension. The template can be called then from within a function. Templates can contain any type of text (which will be most likely HTML-markup mixed with Python statements). Furthermore, templates can take arguments, e.g. the result set of a database query, which will be then formated nicely within the template.
+Bottle proporciona su propio *motor* de plantillas brings its own easy-to-use template engine with it. Templates are stored as separate files having a ".tpl" extension. The template can be called then from within a function. Templates can contain any type of text (which will be most likely HTML-markup mixed with Python statements). Furthermore, templates can take arguments, e.g. the result set of a database query, which will be then formated nicely within the template.
 
 Right here, we are going to cast the result of our query showing the open ToDo items into a simple table with two columns: the first column will contain the ID of the item, the second column the text. The result set is, as seen above, a list of tuples, each tuple contains one set of results.
 
