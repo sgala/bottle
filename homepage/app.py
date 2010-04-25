@@ -126,7 +126,7 @@ def page(name='start'):
 @route('/rss.xml')
 @view('rss')
 def blogrss():
-    response.content_type = 'xml/rss'
+    response.content_type = 'application/xml+rss'
     posts = [post for post in iter_blogposts() if post.exists and post.is_blogpost]
     posts.sort(key=lambda x: x.blogtime, reverse=True)
     return dict(posts=posts)

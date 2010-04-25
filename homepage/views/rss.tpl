@@ -4,6 +4,7 @@
     <title>Bottle WSGI Blog Posts</title>
     <description>The latest Blog Posts</description>
     <link>http://bottle.paws.de/blog</link>
+    <atom:link href="http://bottle.paws.de/rss.xml" rel="self" type="application/rss+xml" />
     %for post in posts:
       %link = 'http://bottle.paws.de/page/%s' % post.name
       <item>
