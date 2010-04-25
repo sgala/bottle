@@ -320,10 +320,12 @@ class Router(object):
 
     def build(self, route_name, **args):
         ''' Builds an URL out of a named route and some parameters.'''
-        try:
-            return self.named[route_name] % args
+        try: string = self.named[route_name]
         except KeyError:
             raise RouteBuildError("No route found with name '%s'." % route_name)
+        try: return string % args
+        except KeyError:
+            raise RouteBuildError("Missing parameter in route spec.")
 
     def __eq__(self, other):
         return self.routes == other.routes
