@@ -167,7 +167,7 @@ Vamos ahora a considerar maneras de darle un formato adecuado a la salida que pr
 
 Bottle espera recibir una cadena o una lista de cadenas de caracteres de los manejadores, y los devuelve al navegador con ayuda del servidor incluido. A bottle no le importa el contenido de la cadena, que puede ser texto formateado con marcado HTML.
 
-Bottle proporciona su propio *motor* de plantillas brings its own easy-to-use template engine with it. Templates are stored as separate files having a ".tpl" extension. The template can be called then from within a function. Templates can contain any type of text (which will be most likely HTML-markup mixed with Python statements). Furthermore, templates can take arguments, e.g. the result set of a database query, which will be then formated nicely within the template.
+Bottle proporciona su propio *motor* de plantillas. Las plantillas se almacenan como ficheros con una extensión `.tpl`. Se puede llamar a las plantillas desde cualquier función. Pueden contener cualquier tipo de texto, que será muy probablemente marcado HTML o similar mezclado con sentencias de python. Las plantillas pueden recibir argumentos, por ejemplo el resultado de una petición a la base de datos, a los que se podrá dar formato.
 
 Right here, we are going to cast the result of our query showing the open ToDo items into a simple table with two columns: the first column will contain the ID of the item, the second column the text. The result set is, as seen above, a list of tuples, each tuple contains one set of results.
 
