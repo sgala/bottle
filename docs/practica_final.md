@@ -173,7 +173,25 @@ debería funcionar así:
     <source src="/dizzy.ogv">
 </video>
 
-**Nota**: No todos los formatos de vídeo funcionan, en el ejemplo uso ogv.
+**Nota**: No todos los formatos de vídeo funcionan, en el ejemplo uso ogv. Funciona con Firefox 3.6 (no estoy seguro con 3.5) y con Google Chrome, Chromium o Safari suficientemente moderno. No sé con MS IE.
+
+**Nota 2**: En el servidor que sirve el sitio de bottle, para que funcione este ejemplo, tuvimos que hacer el siguiente cambio, para que sirva el vídeo:
+
+    #!diff
+    diff --git a/homepage/app.py b/homepage/app.py
+    index 2545514..df08cd0 100755
+    --- a/homepage/app.py
+    +++ b/homepage/app.py
+    @@ -106,7 +106,7 @@ def static(filename):
+     
+     # Static files
+     
+    -@route('/:filename#.+\.(css|js|ico|png|txt|html)#')
+    +@route('/:filename#.+\.(css|js|ico|png|txt|html|ogv|mp4)#')
+     def static(filename):
+         return bottle.static_file(filename, root='./static/')
+
+Es decir, añadirls ogv y mp4 a las extensiones que sirve estáticamente. También hubo que guardar el vídeo en el subdirectorio ``static`` con el nombre que se usa en el elemento ``<src>``
 
 ## Uso de markdown para formato de textos y comentarios
 Markdown es un lenguaje simple, parecido a texto, que se convierte en HTML.
