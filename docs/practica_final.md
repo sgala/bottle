@@ -157,7 +157,23 @@ así como la correspondencia del nombre del campo, en este caso, ``ficherodatos`
 con el atributo del que hacemos ``.get()`` en el diccionario ``request.POST``.
 
 ## Código y formato para reproducir vídeo en HTML5
-TBD (**Pendiente**)
+
+Este código simple:
+
+    #!html
+    <video controls="controls">
+        <source src="/dizzy.mp4">
+        <source src="/dizzy.ogv">
+    </video>
+
+debería funcionar así:
+
+<video controls="controls">
+    <source src="/dizzy.mp4">
+    <source src="/dizzy.ogv">
+</video>
+
+**Nota**: No todos los formatos de vídeo funcionan, en el ejemplo uso ogv.
 
 ## Uso de markdown para formato de textos y comentarios
 Markdown es un lenguaje simple, parecido a texto, que se convierte en HTML.

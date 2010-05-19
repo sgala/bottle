@@ -106,7 +106,7 @@ def static(filename):
 
 # Static files
 
-@route('/:filename#.+\.(css|js|ico|png|txt|html)#')
+@route('/:filename#.+\.(css|js|ico|png|txt|html|ogv|mp4)#')
 def static(filename):
     return bottle.static_file(filename, root='./static/')
 
