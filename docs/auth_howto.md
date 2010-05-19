@@ -86,7 +86,7 @@ hará que las peticiones sin usuario vayan a una url de login:
         auth = check_auth(user, password)
         if not auth:
             redirect(login_url)
-        request.environ['REMOTE_USER'] = user['name']
+        request.environ['REMOTE_USER'] = user
         return result
     except:
         redirect(login_url)
@@ -103,7 +103,7 @@ donde `handler()` es nuestro controlador o *callback*:
     def check_auth(*a, **ka):
         try:
             user = get_auth_data() # ignoramos password
-            request.environ['REMOTE_USER'] = user['name']
+            request.environ['REMOTE_USER'] = user
         except:
             redirect(login_url)
         return handler(*a, **ka)
