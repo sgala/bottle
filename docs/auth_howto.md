@@ -125,24 +125,31 @@ aplicación bottle muy simple.
 
     def get_auth_data():
         try:
-            user = request.get_cookie("user", secret)
+            user = request.get_cookie("user", secret=secret)
             if isinstance(user, dict):
                 return user['name'], None # usuario, password
         except: # en get_cookie, no es diccionario o no tiene clave 'name'
             print "Problema en get_auth_data"
-        return None
+        return None, None
 
-    def auth_required(check_auth, login_url="/auth/login"):
+    def check_auth(user, password):
+        return user is not None
+
+    def auth_required(check_auth=check_auth, login_url="/auth/login"):
         def decorator(handler, *a, **ka):
             @functools.wraps(handler)
-            def check_auth(*a, **ka):
+            def wrapper(*a, **ka):
                 try:
-                    user = get_auth_data()
-                    request.environ['REMOTE_USER'] = user['name']
+                    user, token = get_auth_data()
+                    if check_auth(user, None):
+                        request.environ['REMOTE_USER'] = user
+                        return handler(*a, **ka)
+                    else:
+                        redirect(login_url + "?next="+cgi.escape(request.url))
                 except (KeyError, TypeError):
+                    print "excepción en auth_required, envío a login"
                     redirect(login_url + "?next="+cgi.escape(request.url))
-                return handler(*a, **ka)
-            return check_auth
+            return wrapper
         return decorator
 
 `auth_required` es un decorador que, cuando se llama con una url de
