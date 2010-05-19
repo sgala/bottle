@@ -205,7 +205,7 @@ Un principal que funciona:
     @route("/auth/logout", name="logout")
     @view(AUTH_TPL, url=url)
     def logout():
-        response.set_cookie("user", "", path="/", secret=secret, expires=-3600) # elimina la cookie
+        response.set_cookie("user", "", secret=secret, path="/", expires=-3600) # elimina la cookie
         query = '?msg=You+are+now+logged+out'
         return redirect(url("principal")+query)
 
