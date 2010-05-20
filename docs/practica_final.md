@@ -191,7 +191,7 @@ debería funcionar así:
      def static(filename):
          return bottle.static_file(filename, root='./static/')
 
-Es decir, añadirls ogv y mp4 a las extensiones que sirve estáticamente. También hubo que guardar el vídeo en el subdirectorio ``static`` con el nombre que se usa en el elemento ``<src>``
+Es decir, añadirle ogv y mp4 a las extensiones que sirve estáticamente el sitio. También tuve que guardar el vídeo en el subdirectorio ``static`` con el mismo nombre que se usa en el elemento ``<src>``
 
 ## Uso de markdown para formato de textos y comentarios
 Markdown es un lenguaje simple, parecido a texto, que se convierte en HTML.
