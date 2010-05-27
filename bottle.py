@@ -320,10 +320,12 @@ class Router(object):
 
     def build(self, route_name, **args):
         ''' Builds an URL out of a named route and some parameters.'''
-        try:
-            return self.named[route_name] % args
+        try: string = self.named[route_name]
         except KeyError:
             raise RouteBuildError("No route found with name '%s'." % route_name)
+        try: return string % args
+        except KeyError:
+            raise RouteBuildError("Missing parameter in route spec.")
 
     def __eq__(self, other):
         return self.routes == other.routes
@@ -1119,7 +1121,7 @@ def validate(**vkargs):
     Handles ValueError and missing arguments by raising HTTPError(403).
     """
     def decorator(func):
-        def wrapper(**kargs):
+        def wrapper(*args, **kargs):
             for key, value in vkargs.iteritems():
                 if key not in kargs:
                     abort(403, 'Missing parameter: %s' % key)
@@ -1127,7 +1129,7 @@ def validate(**vkargs):
                     kargs[key] = value(kargs[key])
                 except ValueError:
                     abort(403, 'Wrong parameter format for: %s' % key)
-            return func(**kargs)
+            return func(*args, **kargs)
         return wrapper
     return decorator
 

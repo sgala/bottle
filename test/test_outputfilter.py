@@ -68,6 +68,11 @@ class TestOutputFilter(ServerTestBase):
         self.assertBody(bottle.json_dumps({'a': 1}))
         self.assertHeader('Content-Type','application/json')
 
+    def test_json_emptydict(self):
+        self.app.route('/')(lambda: {})
+        self.assertBody(bottle.json_dumps({}))
+        self.assertHeader('Content-Type','application/json')
+
     def test_custom(self):
         self.app.route('/')(lambda: {'a': 1, 'b': 2})
         self.app.add_filter(dict, lambda x: x.keys())
