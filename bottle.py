@@ -490,7 +490,8 @@ class Bottle(object):
             response.headers['Content-Length'] = 0
             return []
         # Join lists of byte or unicode strings. Mixed lists are NOT supported
-        if isinstance(out, list) and isinstance(out[0], (StringType, unicode)):
+        if isinstance(out, (tuple, list))\
+        and isinstance(out[0], (StringType, unicode)):
             out = out[0][0:0].join(out) # b'abc'[0:0] -> b''
         # Encode unicode strings
         if isinstance(out, unicode):
@@ -507,10 +508,10 @@ class Bottle(object):
             out.apply(response)
             return self._cast(out.output, request, response)
 
-        # Cast Files into iterables
-        if hasattr(out, 'read') and 'wsgi.file_wrapper' in request.environ:
+        # File-like objects. Wrap or transfer in chunks that fit into memory.
+        if hasattr(out, 'read'):
             out = request.environ.get('wsgi.file_wrapper',
-            lambda x, y: iter(lambda: x.read(y), ''))(out, 1024*64)
+                  lambda x, y: iter(lambda: x.read(y), tob('')))(out, 1024*64)
 
         # Handle Iterables. We peek into them to detect their inner type.
         try:
@@ -546,8 +547,9 @@ class Bottle(object):
             response.bind(self)
             out = self.handle(request.path, request.method)
             out = self._cast(out, request, response)
+            # rfc2616 section 4.3
             if response.status in (100, 101, 204, 304) or request.method == 'HEAD':
-                out = [] # rfc2616 section 4.3
+                out = []
             status = '%d %s' % (response.status, HTTP_CODES[response.status])
             start_response(status, response.headerlist)
             return out
@@ -823,6 +825,15 @@ class Response(threading.local):
         for c in self.COOKIES.values():
             if c.OutputString() not in self.headers.getall('Set-Cookie'):
                 self.headers.append('Set-Cookie', c.OutputString())
+        # rfc2616 section 10.2.3, 10.3.5
+        if self.status in (204, 304) and 'content-type' in self.headers:
+            del self.headers['content-type']
+        if self.status == 304:
+            for h in ('allow', 'content-encoding', 'content-language',
+                      'content-length', 'content-md5', 'content-range',
+                      'content-type', 'last-modified'): # + c-location, expires?
+                if h in self.headers:
+                     del self.headers[h]
         return list(self.headers.iterallitems())
     headerlist = property(wsgiheader)
 
@@ -974,11 +985,11 @@ def static_file(filename, root, guessmime=True, mimetype=None, download=False):
     header = dict()
 
     if not filename.startswith(root):
-        return HTTPError(401, "Access denied.")
+        return HTTPError(403, "Access denied.")
     if not os.path.exists(filename) or not os.path.isfile(filename):
         return HTTPError(404, "File does not exist.")
     if not os.access(filename, os.R_OK):
-        return HTTPError(401, "You do not have permission to access this file.")
+        return HTTPError(403, "You do not have permission to access this file.")
 
     if not mimetype and guessmime:
         header['Content-Type'] = mimetypes.guess_type(filename)[0]
@@ -998,7 +1009,8 @@ def static_file(filename, root, guessmime=True, mimetype=None, download=False):
         ims = ims.split(";")[0].strip() # IE sends "<date>; length=146"
         ims = parse_date(ims)
         if ims is not None and ims >= int(stats.st_mtime):
-           return HTTPResponse(status=304, header=header)
+            header['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
+            return HTTPResponse(status=304, header=header)
     header['Content-Length'] = stats.st_size
     if request.method == 'HEAD':
         return HTTPResponse('', header=header)
@@ -1052,7 +1064,7 @@ def cookie_decode(data, key):
     if cookie_is_encoded(data):
         sig, msg = data.split(u'?'.encode('ascii'),1) #2to3 hack
         if sig[1:] == base64.b64encode(hmac.new(key, msg).digest()):
-           return pickle.loads(base64.b64decode(msg))
+            return pickle.loads(base64.b64decode(msg))
     return None
 
 
@@ -1185,8 +1197,8 @@ class CGIServer(ServerAdapter):
 
 class FlupFCGIServer(ServerAdapter):
     def run(self, handler): # pragma: no cover
-       import flup.server.fcgi
-       flup.server.fcgi.WSGIServer(handler, bindAddress=(self.host, self.port)).run()
+        import flup.server.fcgi
+        flup.server.fcgi.WSGIServer(handler, bindAddress=(self.host, self.port)).run()
 
 
 class WSGIRefServer(ServerAdapter):
@@ -1362,8 +1374,8 @@ def reloader_run(server, app, interval):
                         print 'Parent Bottle process killed'
                         print 'Use Ctrl-C to exit.'
                     else:
-                        continue
                         print "Restarting..."
+                        continue
                 app.serve = False
                 time.sleep(interval) # be nice and wait for running requests
                 sys.exit(3)
