@@ -139,7 +139,7 @@ Bottle incluye un servidor HTTP, pero soporta también otros como [cherrypy][],
 
 Bottle **no** incluye (todavía):
 
-  * Modelos and Gestores Objeto-Relacional (ORMs): Elege uno: SQLAlchemy, Elixir
+  * Modelos and Gestores Objeto-Relacional (ORMs): Elija uno: SQLAlchemy, Elixir
   * HTML-Helper, Sesiones, Identificación y Autenticación: Hágalo usted mismo
   * Scaffolding: No tenemos de eso, lo siento
 
