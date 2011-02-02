@@ -4,9 +4,13 @@ import bottle
 class TestRouter(unittest.TestCase):
     def setUp(self):
         self.r = r = bottle.Router()
+    
+    def add(self, *a, **ka):
+        self.r.add(*a, **ka)
+        self.r.compile()
 
     def testBasic(self):
-        add = self.r.add
+        add = self.add
         match = self.r.match
         add('/static', 'static')
         self.assertEqual(('static', {}), match('/static'))
@@ -22,8 +26,16 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(('anon', {}), match('/anon/match'))
         self.assertEqual((None, {}), match('//no/m/at/ch/'))
 
+    def testWildcardNames(self):
+        add = self.add
+        match = self.r.match
+        add('/alpha/:abc', 'abc')
+        self.assertEqual(('abc', {'abc': 'alpha'}), match('/alpha/alpha'))
+        add('/alnum/:md5', 'md5')
+        self.assertEqual(('md5', {'md5': 'sha1'}), match('/alnum/sha1'))
+
     def testParentheses(self):
-        add = self.r.add
+        add = self.add
         match = self.r.match
         add('/func(:param)', 'func')
         self.assertEqual(('func', {'param':'foo'}), match('/func(foo)'))
@@ -35,10 +47,10 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(('groups', {'param':'foo'}), match('/groups/foo'))
 
     def testErrorInPattern(self):
-        self.assertRaises(bottle.RouteSyntaxError, self.r.add, '/:bug#(#/', 'buggy')
+        self.assertRaises(bottle.RouteSyntaxError, self.add, '/:bug#(#/', 'buggy')
 
     def testBuild(self):
-        add = self.r.add
+        add = self.add
         build = self.r.build
         add('/:test/:name#[a-z]+#/', 'handler', name='testroute')
         add('/anon/:#.#', 'handler', name='anonroute')

@@ -17,7 +17,7 @@ class TestWsgi(ServerTestBase):
         @bottle.route('/')
         def test(): return 'test'
         self.assertStatus(404, '/not/found')
-        self.assertStatus(404, '/', post="var=value")
+        self.assertStatus(405, '/', post="var=value")
         self.assertBody('test', '/')
 
     def test_post(self):
@@ -25,7 +25,7 @@ class TestWsgi(ServerTestBase):
         @bottle.route('/', method='POST')
         def test(): return 'test'
         self.assertStatus(404, '/not/found')
-        self.assertStatus(404, '/')
+        self.assertStatus(405, '/')
         self.assertBody('test', '/', post="var=value")
 
     def test_headget(self):
@@ -35,7 +35,7 @@ class TestWsgi(ServerTestBase):
         @bottle.route('/head', method='HEAD')
         def test2(): return 'test'
         # GET -> HEAD
-        self.assertStatus(404, '/head')
+        self.assertStatus(405, '/head')
         # HEAD -> HEAD
         self.assertStatus(200, '/head', method='HEAD')
         self.assertBody('', '/head', method='HEAD')
@@ -182,11 +182,17 @@ class TestDecorators(ServerTestBase):
         self.assertBody('', '/test/304')
 
     def test_routebuild(self):
-        """ WSGI: Test validate-decorator"""
-        @bottle.route('/a/:b/c', name='named')
-        def test(var): pass
+        """ WSGI: Test route builder """
+        bottle.route('/a/:b/c', name='named')(5)
+        bottle.request.environ['SCRIPT_NAME'] = ''
         self.assertEqual('/a/xxx/c', bottle.url('named', b='xxx'))
         self.assertEqual('/a/xxx/c', bottle.app().get_url('named', b='xxx'))
+        bottle.request.environ['SCRIPT_NAME'] = '/app'
+        self.assertEqual('/app/a/xxx/c', bottle.url('named', b='xxx'))
+        bottle.request.environ['SCRIPT_NAME'] = '/app/'
+        self.assertEqual('/app/a/xxx/c', bottle.url('named', b='xxx'))
+        bottle.request.environ['SCRIPT_NAME'] = 'app/'
+        self.assertEqual('/app/a/xxx/c', bottle.url('named', b='xxx'))
 
     def test_decorators(self):
         app = bottle.Bottle()

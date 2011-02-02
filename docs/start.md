@@ -163,6 +163,7 @@ Bottle **no** incluye (todavía):
   * [Torque](http://github.com/jreid42/torque) Una interfaz multiusuario colaborativa para torrentes.
   * [Message in a Bottle](http://github.com/kennyshen/MIAB) Una aplicación simple de mensajería comunitaria que usa Bottle y Cassandra.
   * [ResBottle](http://github.com/tnm/redweb) Una interfaz web para  [Redis](http://code.google.com/p/redis/).
+  * [Choofnik](http://www.choofnik.com/) Una herramienta de localización  WYSIWYG para sitios web.
 
 ## Gracias a...
 

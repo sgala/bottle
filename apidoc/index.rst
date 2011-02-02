@@ -24,17 +24,9 @@ Bottle is a fast, simple and lightweight WSGI_ micro web-framework for Python_. 
 .. rubric:: Core Features
 
 * **Routing:** Requests to function-call mapping with support for clean and  dynamic URLs.
-* **Templates:** Fast and pythonic :ref:`build-in template engine <tutorial-templates>` and support for mako_, jinja2_ and cheetah_ templates.
+* **Templates:** Fast and pythonic :ref:`built-in template engine <tutorial-templates>` and support for mako_, jinja2_ and cheetah_ templates.
 * **Utilities:** Convenient access to form data, file uploads, cookies, headers and other HTTP related metadata.
-* **Server:** Build-in HTTP development server and support for paste_, fapws3_, flup_, cherrypy_ or any other WSGI_ capable HTTP server.
-
-.. rubric:: Download and Install
-
-.. _download:
-
-.. __: http://github.com/defnull/bottle/raw/master/bottle.py
-
-Install the latest stable release via PyPi_ (``easy_install -U bottle``) or download `bottle.py`__ (unstable) into your project directory. There are no hard [1]_ dependencies other than the Python standard library. Bottle runs with **Python 2.5+ and 3.x** (using 2to3)
+* **Server:** Built-in HTTP development server and support for paste_, fapws3_, `Google App Engine <http://code.google.com/intl/en-US/appengine/>`_, cherrypy_ or any other WSGI_ capable HTTP server.
 
 .. rubric:: Example: "Hello World" in a bottle
 
@@ -48,19 +40,33 @@ Install the latest stable release via PyPi_ (``easy_install -U bottle``) or down
 
   run(host='localhost', port=8080)
 
-Documentation
+.. rubric:: Download and Install
+
+.. _download:
+
+.. __: http://github.com/defnull/bottle/raw/master/bottle.py
+
+Install the latest stable release via PyPi_ (``easy_install -U bottle``) or download `bottle.py`__ (unstable) into your project directory. There are no hard [1]_ dependencies other than the Python standard library. Bottle runs with **Python 2.5+ and 3.x** (using 2to3)
+
+User's Guide
 ===============
-The documentation is a work in progress. If you have questions not answered here, please check the :doc:`faq`, file a ticket at bottles issue_tracker_ or send an e-mail to the `mailing list <mailto:bottlepy@googlegroups.com>`_.
+Start here if you want to learn how to use the bottle framework for web development. If you have any questions not answered here, feel free to ask the `mailing list <mailto:bottlepy@googlegroups.com>`_.
 
 .. toctree::
    :maxdepth: 2
 
    tutorial
-   faq
-   api
    stpl
-   changelog
-   development
+   faq
+
+API Documentation
+==================
+Looking for a specific function, class or method? These chapters cover all the interfaces provided by the Framework and explain how to use them.
+
+.. toctree::
+   :maxdepth: 2
+
+   api
 
 Tutorials and Resources
 =======================
@@ -69,7 +75,18 @@ Tutorials and Resources
    :maxdepth: 2
 
    tutorial_app
+   recipes
 
+Development and Contribution
+============================
+
+These chapters are intended for developers interested in the bottle development and release workflow.
+
+.. toctree::
+   :maxdepth: 2
+
+   changelog
+   development
 
 
 Licence
